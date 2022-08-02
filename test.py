@@ -1,0 +1,80 @@
+import json
+import random
+import time
+
+import numpy as np
+
+from client import WebSocketClient
+from dash_visualizer import DashVisualizer
+
+
+class NumpyEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, (np.int_, np.intc, np.intp, np.int8,
+                            np.int16, np.int32, np.int64, np.uint8,
+                            np.uint16, np.uint32, np.uint64)):
+            return int(obj)
+        elif isinstance(obj, (np.float_, np.float16, np.float32,
+                              np.float64)):
+            return float(obj)
+        elif isinstance(obj, (np.ndarray,)):
+            return obj.tolist()
+        return json.JSONEncoder.default(self, obj)
+
+
+if __name__ == "__main__":
+    rand = random.Random()
+
+    plot_name = "name"
+    address = "localhost"
+    ws_port = 4000
+    websocket_url = f"ws://{address}:{ws_port}"
+
+    visualizer = DashVisualizer(plot_name, address, ws_port, 8000, websocket_url)
+    viz = WebSocketClient(websocket_url)
+
+    for i in range(20):
+        plot_data = {
+            'command_type': 'add2plot',
+            'plot_name': plot_name,
+            'lines': [{
+                'line_name': "1",
+                'data': {
+                    'x': [i * rand.uniform(-1., 1.)],
+                    'y': np.array([2 * i * rand.uniform(-1., 1.)]),
+                    'xr': [rand.uniform(-1., 1.)],
+                    'yr': np.array([rand.uniform(-1., 1.)]),
+                    'legend': "ped"
+                }
+            }]
+        }
+        viz.send(json.dumps(plot_data, cls=NumpyEncoder))
+        time.sleep(0.5)
+
+    plot_names = [plot_name, '11', '22', '33']
+    line_names = ['q', 'd', 'f', 'v']
+    for plot in plot_names:
+        for line_name in line_names:
+            data = np.zeros((4, 30))
+            for i in range(data.shape[1]):
+                data[0, i] = np.array([i * rand.uniform(-1., 1.)])
+                data[1, i] = np.array([2 * i * rand.uniform(-1., 1.)])
+                data[2, i] = np.array([rand.uniform(-1., 1.)])
+                data[3, i] = np.array([rand.uniform(-1., 1.)])
+
+            plot_data = {
+                'command_type': 'add_plot',
+                'plot_name': plot,
+                'lines': [{
+                    'line_name': line_name,
+                    'data': {
+                        'x': data[0, :],
+                        'y': data[1, :],
+                        'xr': data[2, :],
+                        'yr': data[3, :],
+                        'legend': "car"
+                    }
+                }]
+            }
+            viz.send(json.dumps(plot_data, cls=NumpyEncoder))
+            time.sleep(0.5)
