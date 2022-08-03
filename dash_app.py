@@ -1,6 +1,5 @@
 import json
 import multiprocessing
-import time
 
 import numpy as np
 import plotly.graph_objs as go
@@ -18,8 +17,8 @@ class DashApp(multiprocessing.Process):
         self.host = host
         self.websocket_url = websocket_url
 
-        self.plots_data = {plot_name: {}}
-        self.dropdown_names = list(self.plots_data.keys())
+        self.plots_data = {plot_name: {'type': '2D', 'lines': {}}}
+        self.dropdown_names = [(plt_name, self.plots_data[plt_name]['type']) for plt_name in self.plots_data.keys()]
         self.cur_plot = plot_name
         self.app = DashProxy()
         self.update_graph_func = """function(msg) {
@@ -50,16 +49,18 @@ class DashApp(multiprocessing.Process):
                               }),
                     dcc.Dropdown(
                         id='name-dropdown',
-                        options=[{'label': self.cur_plot, 'value': self.cur_plot}],
                         clearable=False,
+                        options=[{'label': f"{plt_name}_{plt_type}",
+                                  'value': plt_name} for plt_name, plt_type in self.dropdown_names],
                         value=self.cur_plot,
                         style={
                             'fontSize': '20px',
                             'margin': 5,
                             'width': '250px',
                             'verticalAlign': 'middle',
-                        }
-                    )
+                        },
+                        persistence=True,
+                        persistence_type='local')
                 ],
                 className="row",
                 style={
@@ -94,7 +95,6 @@ class DashApp(multiprocessing.Process):
 
     def run(self):
         self.app.layout = self.init_layout()
-
         self.app.clientside_callback(self.update_graph_func,
                                      Output('plots_data_store', 'data'),
                                      Input("ws", "message"), prevent_initial_call=True)
@@ -104,7 +104,8 @@ class DashApp(multiprocessing.Process):
                           Input('plots_data_store', 'data'), prevent_initial_call=True)(self.update_data)
 
         self.app.callback(Output('live-update-graph', 'figure'),
-                          Input('name-dropdown', 'value'))(self.change_cur_plot)
+                          Input('name-dropdown', 'value'),
+                          Input('name-dropdown', 'options'))(self.change_cur_plot)
 
         self.app.run_server(host=self.host, port=self.port, dev_tools_silence_routes_logging=True, debug=False)
 
@@ -112,31 +113,37 @@ class DashApp(multiprocessing.Process):
         command = json.loads(message['msg']['data'])
         plot_name = command['plot_name']
         self.plots_data.setdefault(plot_name, {})
+        self.plots_data[plot_name].setdefault('lines', {})
+        self.plots_data[plot_name].setdefault('type', '2D')
         for line in command['lines']:
             line_name = line['line_name']
-            self.plots_data[plot_name].setdefault(line_name, {})
+            plots_lines = self.plots_data[plot_name]['lines']
+            plots_lines.setdefault(line_name, {})
             for key, value in line['data'].items():
                 if isinstance(value, list):
                     value = np.array(value)
-                    self.plots_data[plot_name][line_name].setdefault(key, np.array([]))
+                    plots_lines[line_name].setdefault(key, np.array([]))
                     if command['command_type'] == 'add2plot':
-                        self.plots_data[plot_name][line_name][key] = np.append(
-                            self.plots_data[plot_name][line_name][key], value)
-                    else:
-                        self.plots_data[plot_name][line_name][key] = value
-                else:
-                    self.plots_data[plot_name][line_name][key] = value
-        self.dropdown_names = list(self.plots_data.keys())
-        return [{'label': i, 'value': i} for i in self.dropdown_names], self.cur_plot
+                        plots_lines[line_name][key] = np.append(plots_lines[line_name][key], value)
+                        continue
+                plots_lines[line_name][key] = value
+            if all(key in plots_lines[line_name] for key in ['x', 'y', 'z']):
+                self.plots_data[plot_name]['type'] = '3D'
 
-    def change_cur_plot(self, value):
+        self.dropdown_names = [(plt_name, self.plots_data[plt_name]['type']) for plt_name in self.plots_data.keys()]
+        return [{'label': f"{plt_name}_{plt_type}", 'value': plt_name} for plt_name, plt_type in self.dropdown_names], self.cur_plot
+
+    def change_cur_plot(self, value, _):
         self.cur_plot = value
-        return self.update_graph()
+        if self.plots_data[self.cur_plot]['type'] == '2D':
+            return self.update_graph2d()
+        else:
+            return self.update_graph3d()
 
-    def update_graph(self):
+    def update_graph2d(self):
         fig = go.Figure()
-        for line_name, line in self.plots_data[self.cur_plot].items():
-            if line['x'].shape[0] > 0 and line['y'].shape[0] > 0:
+        for line_name, line in self.plots_data[self.cur_plot]['lines'].items():
+            if all(line[key].shape[0] > 0 for key in ['x', 'y']):
                 fig.add_scatter(
                     x=line['x'],
                     y=line['y'],
@@ -151,6 +158,36 @@ class DashApp(multiprocessing.Process):
             scene=dict(
                 aspectratio=dict(x=1, y=1)
             ),
-        )
-        fig.update_layout(uirevision=True)
+            uirevision=True)
+        return fig
+
+    def update_graph3d(self):
+        fig = go.Figure()
+        max_vals, min_vals = [], []
+        for line_name, line in self.plots_data[self.cur_plot]['lines'].items():
+            if 'z' not in line:
+                line['z'] = np.zeros(shape=line['x'].shape, dtype=float)
+            if all(line[key].shape[0] > 0 for key in ['x', 'y', 'z']):
+                fig.add_scatter3d(
+                    x=line['x'],
+                    y=line['y'],
+                    z=line['z'],
+                    name=line_name,
+                    mode='lines+markers')
+                max_vals.append(np.max([line['x'], line['y'], line['z']]))
+                min_vals.append(np.min([line['x'], line['y'], line['z']]))
+        max_val, min_val = max(max_vals), min(min_vals)
+        fig.update_layout(
+            template="plotly_dark",
+            autosize=True,
+            scene=dict(
+                xaxis=dict(range=[min_val, max_val]),
+                yaxis=dict(range=[min_val, max_val]),
+                zaxis=dict(range=[min_val, max_val]),
+                xaxis_title='X Position',
+                yaxis_title='Y Position',
+                zaxis_title='Z Position',
+                aspectmode='cube'
+            ),
+            uirevision=True)
         return fig

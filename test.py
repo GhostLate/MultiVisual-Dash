@@ -27,10 +27,10 @@ if __name__ == "__main__":
 
     plot_name = "name"
     address = "localhost"
-    ws_port = 4000
+    ws_port = 4002
     websocket_url = f"ws://{address}:{ws_port}"
 
-    visualizer = DashVisualizer(plot_name, address, ws_port, 8000, websocket_url)
+    visualizer = DashVisualizer(plot_name, address, ws_port, 8002, websocket_url)
     viz = WebSocketClient(websocket_url)
 
     for i in range(20):
@@ -42,6 +42,7 @@ if __name__ == "__main__":
                 'data': {
                     'x': [i * rand.uniform(-1., 1.)],
                     'y': np.array([2 * i * rand.uniform(-1., 1.)]),
+                    'z': np.array([0.1 * i * rand.uniform(-1., 1.)]),
                     'xr': [rand.uniform(-1., 1.)],
                     'yr': np.array([rand.uniform(-1., 1.)]),
                     'legend': "ped"
@@ -49,7 +50,7 @@ if __name__ == "__main__":
             }]
         }
         viz.send(json.dumps(plot_data, cls=NumpyEncoder))
-        time.sleep(0.5)
+        time.sleep(0.2)
 
     plot_names = [plot_name, '11', '22', '33']
     line_names = ['q', 'd', 'f', 'v']
@@ -77,4 +78,4 @@ if __name__ == "__main__":
                 }]
             }
             viz.send(json.dumps(plot_data, cls=NumpyEncoder))
-            time.sleep(0.5)
+            time.sleep(0.2)
