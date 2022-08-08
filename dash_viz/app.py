@@ -85,4 +85,4 @@ class DashApp(multiprocessing.Process):
 
     def change_cur_plot(self, value, _):
         self.cur_plot = value
-        return UpdateGraph(self.plots_data, self.cur_plot).fig
+        return UpdateGraph(self.title, self.plots_data, self.cur_plot).fig

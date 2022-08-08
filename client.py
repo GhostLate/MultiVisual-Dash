@@ -23,4 +23,4 @@ class WebSocketClient:
 
     async def __async__command(self, message):
         await self.ws.send(message)
-        return await self.ws.recv()
+        # return await self.ws.recv()

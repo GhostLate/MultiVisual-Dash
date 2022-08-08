@@ -5,16 +5,6 @@ from dash_extensions import WebSocket
 
 def init_layout(self) -> html.Div:
     return html.Div([
-        html.H4(
-            self.title,
-            style={
-                'textAlign': 'center',
-                'color': 'white',
-                'fontSize': '30px',
-                'margin': 0,
-                'padding': '8px',
-            }
-        ),
         html.Div(
             [
                 html.Span(children='Graph: ',
@@ -48,7 +38,7 @@ def init_layout(self) -> html.Div:
             id='live-update-graph',
             style={
                 'zIndex': '999',
-                'height': 'calc(100% - 50px)',
+                'height': '100%',
                 'width': '100%',
                 'padding': '0px',
             }
