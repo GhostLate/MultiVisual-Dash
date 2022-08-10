@@ -1,11 +1,13 @@
 import json
 import multiprocessing
+import os
 
 from dash.dependencies import Input, Output
 from dash_extensions.enrich import DashProxy
 
 from dash_viz.layout import init_layout
-from dash_viz.utils import UpdateGraph
+from dash_viz.utils import CustomFigure
+from utils import timing
 
 
 class DashApp(multiprocessing.Process):
@@ -26,6 +28,7 @@ class DashApp(multiprocessing.Process):
         self.app = DashProxy()
         self.update_graph_func = """function(msg) {
                 if(!msg) {return {};} return {msg}};"""
+        self.figure = CustomFigure(title, self.plots_data)
 
     def run(self):
         self.app.layout = init_layout(self)
@@ -47,6 +50,8 @@ class DashApp(multiprocessing.Process):
         if msg:
             msg_data = json.loads(msg['msg']['data'])
             self.update_plots_data(msg_data)
+            # if 'save_dir' in msg_data:
+            #     self.save_plot_as_img(msg_data['plot_name'], msg_data['save_dir'])
         self.dropdown_options = []
         if self.plots_data:
             self.dropdown_options = [{'label': f"{plt_name}_{plt_data['type']}", 'value': plt_name}
@@ -85,4 +90,23 @@ class DashApp(multiprocessing.Process):
 
     def change_cur_plot(self, value, _):
         self.cur_plot = value
-        return UpdateGraph(self.title, self.plots_data, self.cur_plot).fig
+        return self.figure.update(self.cur_plot)
+
+    def save_plot_as_img(self, plot_name, save_dir: str,
+                         plot_scale: float = 1.0, img_w: int = 1920, img_h: int = 1080, img_format: str = 'svg'):
+        if self.plots_data and plot_name in self.plots_data:
+            if any(key == self.plots_data[plot_name]['type'] for key in ['2D', '3D']):
+                try:
+                    if not os.path.exists(save_dir):
+                        os.mkdir(save_dir)
+                    figure = CustomFigure(self.title, self.plots_data).update(plot_name)
+                    self.save_fig(figure, f'{save_dir}/{plot_name}.{img_format}', plot_scale, img_w, img_h)
+                    print(f'Saved to {save_dir}/{plot_name}.{img_format}')
+                    return True
+                except Exception as ex:
+                    print(ex)
+
+    @staticmethod
+    @timing
+    def save_fig(fig, path, plot_scale, img_w, img_h):
+        fig.write_image(path, scale=plot_scale, width=img_w, height=img_h)

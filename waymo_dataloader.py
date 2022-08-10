@@ -47,31 +47,32 @@ def get_road_scatters(data: dict) -> list:
             y = filter_valid_data(roads_valid[ids_slice[1]: ids_slice[2]], roads_xyz[ids_slice[1]: ids_slice[2], 1])
             scatter = {
                 'name': f'road_line_{ids_slice[0]}',
-                'mode': 'lines+markers',
+                'mode': 'lines',
                 'x': x,
                 'y': y,
-                'type': roads_type[ids_slice[0]],
-                'marker_size': 2,
+                'type': roads_type[ids_slice[1]],
                 'line_size': 1,
             }
+            if roads_type[ids_slice[1]] == 2:
+                scatter['line_type'] = 'dash'
             scatters.append(scatter)
     return scatters
 
 
 def get_light_scatters(data: dict) -> list:
     lights_state = np.vstack(
-        [data['traffic_light_state/current/state'].numpy(), data['traffic_light_state/past/state'].numpy()])
+        [data['traffic_light_state/past/state'].numpy(), data['traffic_light_state/current/state'].numpy()])
     lights_valid = data['traffic_light_state/current/valid'].numpy().squeeze()
     lights_x = data['traffic_light_state/current/x'].numpy().squeeze()
     lights_y = data['traffic_light_state/current/y'].numpy().squeeze()
     scatters = []
-    for idx in np.where(lights_valid == 1)[0].tolist():
+    for idx in np.where(lights_valid == 1)[0]:
         scatter = {
             'name': f'lights_{idx}',
             'mode': 'markers',
             'x': [lights_x[idx]],
             'y': [lights_y[idx]],
-            'type': 'light',
+            'type': lights_state[-1, idx],
             'state': lights_state[:, idx],
             'marker_size': 10
         }
@@ -80,7 +81,6 @@ def get_light_scatters(data: dict) -> list:
 
 
 def get_car_rect_scatters(data: dict) -> list:
-    agent_rect_valid = data['state/current/valid'].numpy().squeeze()
     agent_rect_x = data['state/current/x'].numpy().squeeze()
     agent_rect_y = data['state/current/y'].numpy().squeeze()
     agent_rect_z = data['state/current/z'].numpy().squeeze()
@@ -88,10 +88,11 @@ def get_car_rect_scatters(data: dict) -> list:
     agent_rect_length = data['state/current/length'].numpy().squeeze()
     agent_rect_width = data['state/current/width'].numpy().squeeze()
     agent_rect_bbox_yaw = data['state/current/bbox_yaw'].numpy().squeeze()
-    agent_rect_id = data['state/id'].numpy().astype(int).squeeze()
-    agent_rect_type = data['state/type'].numpy().astype(int).squeeze()
+    agent_valid = data['state/current/valid'].numpy().squeeze()
+    agent_id = data['state/id'].numpy().astype(int).squeeze()
+    agent_type = data['state/type'].numpy().astype(int).squeeze()
     scatters = []
-    for idx in np.where(agent_rect_valid == 1)[0].tolist():
+    for idx in np.where(agent_valid == 1)[0]:
         xyz = np.array([agent_rect_x[idx], agent_rect_y[idx], agent_rect_z[idx]]).reshape(-1, 1)
         yaw = agent_rect_bbox_yaw[idx]
 
@@ -119,15 +120,60 @@ def get_car_rect_scatters(data: dict) -> list:
 
         box = np.hstack([box_down, box_up])
         scatter = {
-            'name': f'agent_{agent_rect_id[idx]}',
+            'name': f'agent_{agent_id[idx]}',
             'mode': 'lines',
             'x': box[0, :5],
             'y': box[1, :5],
-            'line_size': 2,
+            'line_size': 1,
             'fill': True,
-            'type': agent_rect_type[idx]
+            'type': agent_type[idx]
         }
         scatters.append(scatter)
+    return scatters
+
+
+def get_trajectory_scatters(data: dict) -> list:
+    agent_traj_x = np.hstack([data['state/past/x'].numpy(), data['state/current/x'].numpy()])
+    agent_traj_y = np.hstack([data['state/past/y'].numpy(), data['state/current/y'].numpy()])
+    agent_traj_future_x = data['state/future/x'].numpy()
+    agent_traj_future_y = data['state/future/y'].numpy()
+    agent_valid = np.hstack([data['state/past/valid'].numpy(), data['state/current/valid'].numpy()])
+    agent_future_valid = data['state/future/valid'].numpy()
+    agent_id = data['state/id'].numpy().astype(int).squeeze()
+    agent_type = data['state/type'].numpy().astype(int).squeeze()
+    scatters = []
+    for idx in np.where(agent_valid[:, -1] == 1)[0]:
+        idx_valid = np.where(agent_valid[idx] == 1)[0]
+        min_idx, max_idx = np.min(idx_valid), np.max(idx_valid) + 1
+        x = filter_valid_data(agent_valid[idx, min_idx: max_idx], agent_traj_x[idx, min_idx: max_idx])
+        y = filter_valid_data(agent_valid[idx, min_idx: max_idx], agent_traj_y[idx, min_idx: max_idx])
+        scatter = {
+            'name': f'traj_{agent_id[idx]}',
+            'mode': 'lines+markers',
+            'x': x,
+            'y': y,
+            'type': agent_type[idx],
+            'marker_size': 4,
+            'line_size': 2,
+            #'line_type': 'dash'
+        }
+        scatters.append(scatter)
+        idx_valid = np.where(agent_future_valid[idx] == 1)[0]
+        if len(idx_valid) > 0:
+            min_idx, max_idx = np.min(idx_valid), np.max(idx_valid) + 1
+            x = filter_valid_data(agent_future_valid[idx, min_idx: max_idx], agent_traj_future_x[idx, min_idx: max_idx])
+            y = filter_valid_data(agent_future_valid[idx, min_idx: max_idx], agent_traj_future_y[idx, min_idx: max_idx])
+            scatter = {
+                'name': f'f_traj_{agent_id[idx]}',
+                'mode': 'lines+markers',
+                'x': x,
+                'y': y,
+                'type': agent_type[idx] + 3,
+                'marker_size': 4,
+                'line_size': 2,
+                #'line_type': 'dot'
+            }
+            scatters.append(scatter)
     return scatters
 
 
@@ -136,11 +182,13 @@ class WaymoDataLoader:
         self.dataset = tf.data.TFRecordDataset([tfrecord_path], num_parallel_reads=1)
 
     def __call__(self):
-        for data_id, data in enumerate(tqdm(self.dataset.as_numpy_iterator())):
+        #for data_id, data in enumerate(tqdm(self.dataset.as_numpy_iterator(), position=0, leave=False)):
+        for data_id, data in enumerate(self.dataset.as_numpy_iterator()):
             plot_data = {
                 'command_type': 'add2plot',
                 'plot_name': data_id,
-                'scatters': []
+                'scatters': [],
+                'save_dir': './images'
             }
             data = tf.io.parse_single_example(data, generate_features_description())
             road_scatters = get_road_scatters(data)
@@ -149,4 +197,6 @@ class WaymoDataLoader:
             plot_data['scatters'].extend(light_scatters)
             car_rect_scatters = get_car_rect_scatters(data)
             plot_data['scatters'].extend(car_rect_scatters)
+            trajectory_scatters = get_trajectory_scatters(data)
+            plot_data['scatters'].extend(trajectory_scatters)
             yield plot_data

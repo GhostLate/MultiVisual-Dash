@@ -34,7 +34,7 @@ def init_layout(self) -> html.Div:
                 'display': 'flex'
             }
         ),
-        dcc.Graph(
+        dcc.Loading([dcc.Graph(
             id='live-update-graph',
             style={
                 'zIndex': '999',
@@ -42,11 +42,14 @@ def init_layout(self) -> html.Div:
                 'width': '100%',
                 'padding': '0px',
             }
-        ),
+        )], type="cube", parent_style={
+            'height': '100%',
+            'width': '100%',
+            'padding': '0px',
+            }),
         dcc.Store(id='plots_data_store'),
         WebSocket(id="ws", url=self.websocket_url),
-    ],
-        style={
+    ], style={
             'height': '100%',
             'width': '100%',
             'background': 'black',
