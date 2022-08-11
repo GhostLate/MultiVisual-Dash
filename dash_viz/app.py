@@ -28,7 +28,7 @@ class DashApp(multiprocessing.Process):
         self.app = DashProxy()
         self.update_graph_func = """function(msg) {
                 if(!msg) {return {};} return {msg}};"""
-        self.figure = CustomFigure(title, self.plots_data)
+        self.figure = CustomFigure(self.plots_data)
 
     def run(self):
         self.app.layout = init_layout(self)
@@ -41,8 +41,7 @@ class DashApp(multiprocessing.Process):
                           Input('plots_data_store', 'data'))(self.update_data)
 
         self.app.callback(Output('live-update-graph', 'figure'),
-                          Input('name-dropdown', 'value'),
-                          Input('name-dropdown', 'options'))(self.change_cur_plot)
+                          Input('name-dropdown', 'value'))(self.change_cur_plot)
 
         self.app.run_server(host=self.host, port=self.port, dev_tools_silence_routes_logging=True, debug=False)
 
@@ -50,8 +49,14 @@ class DashApp(multiprocessing.Process):
         if msg:
             msg_data = json.loads(msg['msg']['data'])
             self.update_plots_data(msg_data)
-            # if 'save_dir' in msg_data:
-            #     self.save_plot_as_img(msg_data['plot_name'], msg_data['save_dir'])
+            if 'save_dir' in msg_data:
+                save_p = multiprocessing.Process(target=save_plot_as_img, kwargs={
+                    'plot_data': self.plots_data[msg_data['plot_name']],
+                    'plot_name': msg_data['plot_name'],
+                    'save_dir': msg_data['save_dir']
+                })
+                save_p.start()
+
         self.dropdown_options = []
         if self.plots_data:
             self.dropdown_options = [{'label': f"{plt_name}_{plt_data['type']}", 'value': plt_name}
@@ -68,7 +73,8 @@ class DashApp(multiprocessing.Process):
         plot_data.setdefault('type', 'None')
         plot_data.setdefault('scatter_types', set())
         plot_data.setdefault('scatters', {})
-
+        if 'title' not in msg_data:
+            plot_data['title'] = self.title
         for scatter in msg_data['scatters']:
             plot_data['scatters'].setdefault(scatter['name'], {})
             plot_scatter = plot_data['scatters'][scatter['name']]
@@ -88,25 +94,22 @@ class DashApp(multiprocessing.Process):
             elif all(key in plot_scatter for key in ['x', 'y']):
                 plot_data['type'] = '2D'
 
-    def change_cur_plot(self, value, _):
+    def change_cur_plot(self, value):
         self.cur_plot = value
         return self.figure.update(self.cur_plot)
 
-    def save_plot_as_img(self, plot_name, save_dir: str,
-                         plot_scale: float = 1.0, img_w: int = 1920, img_h: int = 1080, img_format: str = 'svg'):
-        if self.plots_data and plot_name in self.plots_data:
-            if any(key == self.plots_data[plot_name]['type'] for key in ['2D', '3D']):
-                try:
-                    if not os.path.exists(save_dir):
-                        os.mkdir(save_dir)
-                    figure = CustomFigure(self.title, self.plots_data).update(plot_name)
-                    self.save_fig(figure, f'{save_dir}/{plot_name}.{img_format}', plot_scale, img_w, img_h)
-                    print(f'Saved to {save_dir}/{plot_name}.{img_format}')
-                    return True
-                except Exception as ex:
-                    print(ex)
 
-    @staticmethod
-    @timing
-    def save_fig(fig, path, plot_scale, img_w, img_h):
-        fig.write_image(path, scale=plot_scale, width=img_w, height=img_h)
+def save_plot_as_img(plot_data: dict, plot_name, save_dir: str,
+                     plot_scale: float = 1.0, img_w: int = 2560, img_h: int = 1440, img_format: str = 'svg'):
+    if any(key == plot_data['type'] for key in ['2D', '3D']):
+        try:
+            if not os.path.exists(save_dir):
+                os.mkdir(save_dir)
+            plots_data = {plot_name: plot_data}
+            figure = CustomFigure(plots_data).update(plot_name)
+            img_path = f'{save_dir}/{plot_name}.{img_format}'
+            figure.write_image(img_path, scale=plot_scale, width=img_w, height=img_h)
+            print(f'Saved to {img_path}')
+            return True
+        except Exception as ex:
+            print(ex)

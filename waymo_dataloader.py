@@ -7,8 +7,7 @@ from feattures_description import generate_features_description
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import tensorflow as tf
-
-
+from tensorflow.python.util import compat
 def get_slices(samples_id) -> list:
     start_val = samples_id[0]
     start_id = 0
@@ -184,13 +183,13 @@ class WaymoDataLoader:
     def __call__(self):
         #for data_id, data in enumerate(tqdm(self.dataset.as_numpy_iterator(), position=0, leave=False)):
         for data_id, data in enumerate(self.dataset.as_numpy_iterator()):
+            data = tf.io.parse_single_example(data, generate_features_description())
             plot_data = {
                 'command_type': 'add2plot',
-                'plot_name': data_id,
+                'plot_name': str(data['scenario/id'].numpy().astype(str)[0]),
                 'scatters': [],
-                'save_dir': './images'
+                # 'save_dir': './images'
             }
-            data = tf.io.parse_single_example(data, generate_features_description())
             road_scatters = get_road_scatters(data)
             plot_data['scatters'].extend(road_scatters)
             light_scatters = get_light_scatters(data)

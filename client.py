@@ -15,7 +15,7 @@ class WebSocketClient:
 
     async def __async__connect(self):
         logging.info(f"Attempting connection to: {self.websocket_url}")
-        self.ws = await websockets.connect(self.websocket_url)
+        self.ws = await websockets.connect(self.websocket_url, max_size=None)
         logging.info("Connected")
 
     def send(self, message):

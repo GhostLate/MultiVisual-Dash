@@ -23,7 +23,7 @@ class WebSocketServer(multiprocessing.Process):
         asyncio.run(self.main())
 
     async def main(self):
-        async with websockets.serve(self.ws_handler, self.address, self.port) as self.websocket:
+        async with websockets.serve(self.ws_handler, self.address, self.port, max_size=None) as self.websocket:
             await asyncio.Future()
 
     async def unregister(self, ws: websockets.WebSocketServerProtocol) -> None:
