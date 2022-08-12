@@ -4,10 +4,10 @@ dash-extensions~=0.1.5
 dash-html-components~=2.0.0
 dash-table~=5.0.0
 dash~=2.6.0
-numpy~=1.21.5
-plotly~=5.9.0
-kaleido~=0.2.1
-psutil~=5.9.0
+numpy~=1.23.1
+plotly~=5.10.0
+kaleido==0.2.1
+psutil~=5.9.1
 torch~=1.12.0
 tqdm~=4.64.0
-ray~=1.13.0
+scipy~=1.9.0

@@ -5,9 +5,8 @@ import os
 from dash.dependencies import Input, Output
 from dash_extensions.enrich import DashProxy
 
-from dash_viz.layout import init_layout
-from dash_viz.utils import CustomFigure
-from utils import timing
+from .layout import init_layout
+from .utils import CustomFigure
 
 
 class DashApp(multiprocessing.Process):
@@ -80,8 +79,8 @@ class DashApp(multiprocessing.Process):
             plot_scatter = plot_data['scatters'][scatter['name']]
 
             for key, value in scatter.items():
-                if msg_data['command_type'] == 'add2plot' and isinstance(value, list):
-                    plot_scatter.setdefault(key, [])
+                if key in plot_scatter and msg_data['command_type'] == 'add2plot' \
+                        and isinstance(value, list) and isinstance(plot_scatter[key], list):
                     plot_scatter[key].extend(value)
                 else:
                     plot_scatter[key] = value
@@ -100,7 +99,7 @@ class DashApp(multiprocessing.Process):
 
 
 def save_plot_as_img(plot_data: dict, plot_name, save_dir: str,
-                     plot_scale: float = 1.0, img_w: int = 2560, img_h: int = 1440, img_format: str = 'svg'):
+                     plot_scale: float = 1.0, img_w: int = 3840, img_h: int = 2160, img_format: str = 'svg'):
     if any(key == plot_data['type'] for key in ['2D', '3D']):
         try:
             if not os.path.exists(save_dir):

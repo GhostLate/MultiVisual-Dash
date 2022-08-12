@@ -1,5 +1,5 @@
-from dash_viz.app import DashApp
-from server import WebSocketServer
+from .dash_viz.app import DashApp
+from .websocket.server import WebSocketServer
 
 
 class DashVisualizer:

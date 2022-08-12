@@ -1,7 +1,10 @@
 import asyncio
+import json
 import logging
 
 import websockets
+
+from .utils import NumpyEncoder
 
 logging.basicConfig(level=logging.INFO)
 
@@ -19,8 +22,9 @@ class WebSocketClient:
         logging.info("Connected")
 
     def send(self, message):
+        if not isinstance(message, str):
+            message = json.dumps(message, cls=NumpyEncoder)
         return self.loop.run_until_complete(self.__async__command(message))
 
     async def __async__command(self, message):
         await self.ws.send(message)
-        # return await self.ws.recv()

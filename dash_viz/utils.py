@@ -1,11 +1,7 @@
-import time
-from functools import partial
-
 import plotly.express as px
 import plotly.graph_objs as go
 from multiprocessing import Pool
-# from pathos.multiprocessing import ProcessPool as Pool
-from utils import timing
+from ..utils import timing
 
 
 class CustomFigure:
@@ -44,7 +40,6 @@ class CustomFigure:
             self.__updatable = True
         return self.figure
 
-    @timing
     def __update_data(self) -> None:
         for scatter_name, scatter_data in self.plots_data[self._cur_plot]['scatters'].copy().items():
             if all(key in scatter_data for key in ['x', 'y']):
@@ -106,8 +101,8 @@ def create_scatter(plot_type: str, scatter_data: dict, scatter_name: str) -> go.
         if isinstance(scatter_data["type"], int):
             scatter_fig.line.color = px.colors.qualitative.Light24[scatter_data["type"]]
         desc += f'type: {scatter_data["type"]}'
-    if 'state' in scatter_data:
-        desc += f'\nstates: {scatter_data["state"]}'
+    if 'desc' in scatter_data:
+        desc += f'\n{scatter_data["desc"]}'
     if len(desc) > 0:
         scatter_fig.text = desc
     if 'marker_size' in scatter_data:
@@ -117,5 +112,6 @@ def create_scatter(plot_type: str, scatter_data: dict, scatter_name: str) -> go.
         scatter_fig.marker.line.color = '#ffffff'
     if 'fill' in scatter_data:
         scatter_fig.fill = 'toself'
-
+    if 'opacity' in scatter_data and 0 >= scatter_data['opacity'] >= 1:
+        scatter_fig.opacity = scatter_data['opacity']
     return scatter_fig
