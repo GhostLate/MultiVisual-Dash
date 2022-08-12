@@ -19,7 +19,8 @@ class WaymoDataLoader:
             data = tf.io.parse_single_example(data, generate_features_description())
             yield self.data2plot_data(data)
 
-    def data2plot_data(self, data, pred_traj_data: dict = None, save_dir: str = None):
+    @staticmethod
+    def data2plot_data(data, pred_traj_data: dict = None, save_dir: str = None):
         plot_data = {
             'command_type': 'add2plot',
             'plot_name': str(data['scenario/id'].numpy().astype(str)[0]),
