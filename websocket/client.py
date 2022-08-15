@@ -4,7 +4,7 @@ import logging
 
 import websockets
 
-from .utils import NumpyEncoder
+from websocket.utils import NumpyEncoder
 
 logging.basicConfig(level=logging.INFO)
 

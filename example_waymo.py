@@ -1,8 +1,8 @@
 import time
 
-from .dash_visualizer import DashVisualizer
-from .dataloaders.waymo.dataloader import WaymoDataLoader
-from .websocket.client import WebSocketClient
+from dash_visualizer import DashVisualizer
+from dataloaders.waymo.dataloader import WaymoDataLoader
+from websocket.client import WebSocketClient
 
 if __name__ == "__main__":
     address = "localhost"

@@ -5,16 +5,12 @@ import os
 from dash.dependencies import Input, Output
 from dash_extensions.enrich import DashProxy
 
-from .layout import init_layout
-from .utils import CustomFigure
+from dash_viz.layout import init_layout
+from dash_viz.custom_figure import CustomFigure
 
 
 class DashApp(multiprocessing.Process):
-    dropdown_options: list
-    cur_plot: str | None
-    plots_data: dict
-
-    def __init__(self, title: str, host: str, port: int, websocket_url: str):
+    def __init__(self, title: str, host: str, port: int, websocket_url: str, use_loader_widget=False):
         multiprocessing.Process.__init__(self)
         self.title = title
         self.port = port
@@ -23,15 +19,14 @@ class DashApp(multiprocessing.Process):
         self.plots_data = dict()
         self.dropdown_options = list()
         self.cur_plot = None
+        self.use_loader_widget = use_loader_widget
 
         self.app = DashProxy()
-        self.update_graph_func = """function(msg) {
-                if(!msg) {return {};} return {msg}};"""
         self.figure = CustomFigure(self.plots_data)
 
     def run(self):
-        self.app.layout = init_layout(self)
-        self.app.clientside_callback(self.update_graph_func,
+        self.app.layout = init_layout(self.websocket_url, self.use_loader_widget)
+        self.app.clientside_callback("""function(msg) {if(!msg) {return {};} return {msg}};""",
                                      Output('plots_data_store', 'data'),
                                      Input("ws", "message"), prevent_initial_call=True)
 
@@ -60,7 +55,6 @@ class DashApp(multiprocessing.Process):
         if self.plots_data:
             self.dropdown_options = [{'label': f"{plt_name}_{plt_data['type']}", 'value': plt_name}
                                      for plt_name, plt_data in self.plots_data.items()]
-
             if self.cur_plot is None:
                 self.cur_plot = self.dropdown_options[0]['value']
         return self.dropdown_options, self.cur_plot
@@ -90,7 +84,7 @@ class DashApp(multiprocessing.Process):
 
             if all(key in plot_scatter for key in ['x', 'y', 'z']):
                 plot_data['type'] = '3D'
-            elif all(key in plot_scatter for key in ['x', 'y']):
+            elif plot_data['type'] == 'None' and all(key in plot_scatter for key in ['x', 'y']):
                 plot_data['type'] = '2D'
 
     def change_cur_plot(self, value):

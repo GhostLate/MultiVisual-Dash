@@ -2,9 +2,9 @@ import os
 
 import numpy as np
 
-from .utils import get_road_scatters, get_car_rect_scatters, get_trajectory_scatters, \
+from dataloaders.waymo.utils import get_road_scatters, get_car_rect_scatters, get_trajectory_scatters, \
     get_light_scatters, get_pred_trajectory_scatters
-from .feattures_description import generate_features_description
+from dataloaders.waymo.feattures_description import generate_features_description
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import tensorflow as tf

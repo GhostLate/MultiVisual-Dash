@@ -1,7 +1,7 @@
 import plotly.express as px
 import plotly.graph_objs as go
 from multiprocessing import Pool
-from ..utils import timing
+from utils import timing
 
 
 class CustomFigure:
@@ -40,6 +40,7 @@ class CustomFigure:
             self.__updatable = True
         return self.figure
 
+    @timing
     def __update_data(self) -> None:
         for scatter_name, scatter_data in self.plots_data[self._cur_plot]['scatters'].copy().items():
             if all(key in scatter_data for key in ['x', 'y']):
@@ -66,8 +67,8 @@ class CustomFigure:
     def __update_layout(self) -> None:
         self.__init_base_layout()
         if self._cur_plot_type == '2D':
-            self.figure.update_xaxes(title="X Position", scaleanchor='y')
-            self.figure.update_yaxes(title="Y Position", constrain='domain')
+            self.figure.update_xaxes(title="X Axis", scaleanchor='y')
+            self.figure.update_yaxes(title="Y Axis", constrain='domain')
             self.figure.update_layout(
                 scene=dict(
                     aspectratio=dict(x=1, y=1)
@@ -75,9 +76,9 @@ class CustomFigure:
         elif self._cur_plot_type == '3D':
             self.figure.update_layout(
                 scene=dict(
-                    xaxis_title='X Position',
-                    yaxis_title='Y Position',
-                    zaxis_title='Z Position',
+                    xaxis_title='X Axis',
+                    yaxis_title='Y Axis',
+                    zaxis_title='Z Axis',
                     aspectratio=dict(x=1, y=1, z=1)
                 ))
 
