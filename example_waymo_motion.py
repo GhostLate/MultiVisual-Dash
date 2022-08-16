@@ -1,7 +1,7 @@
 import time
 
 from dash_visualizer import DashVisualizer
-from dataloaders.waymo.dataloader import WaymoDataLoader
+from dataloaders.waymo.motion_dataloader import WaymoMotionDataLoader
 from websocket.client import WebSocketClient
 
 if __name__ == "__main__":
@@ -9,8 +9,8 @@ if __name__ == "__main__":
     ws_port = 4002
     websocket_url = f"ws://{address}:{ws_port}"
 
-    waymo_data_loader = WaymoDataLoader("./data/validation_tfexample.tfrecord-00000-of-00150")
-    visualizer_server = DashVisualizer('Trajectory', address, ws_port, 8003, f"{websocket_url}/dash_client")
+    waymo_data_loader = WaymoMotionDataLoader("./data/validation_tfexample.tfrecord-00000-of-00150")
+    visualizer_server = DashVisualizer('Waymo Motion', address, ws_port, 8003, f"{websocket_url}/dash_client")
     visualizer_client = WebSocketClient(websocket_url)
     i = 0
 
@@ -19,5 +19,5 @@ if __name__ == "__main__":
 
         time.sleep(1)
         i += 1
-        if i > 10:
+        if i > 1:
             break

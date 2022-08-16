@@ -2,7 +2,7 @@ import os
 
 import numpy as np
 
-from dataloaders.waymo.utils import get_road_scatters, get_car_rect_scatters, get_trajectory_scatters, \
+from dataloaders.waymo.motion_utils import get_road_scatters, get_car_rect_scatters, get_trajectory_scatters, \
     get_light_scatters, get_pred_trajectory_scatters
 from dataloaders.waymo.feattures_description import generate_features_description
 
@@ -10,7 +10,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import tensorflow as tf
 
 
-class WaymoDataLoader:
+class WaymoMotionDataLoader:
     def __init__(self, tfrecord_path: str):
         self.dataset = tf.data.TFRecordDataset([tfrecord_path], num_parallel_reads=1)
 

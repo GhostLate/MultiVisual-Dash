@@ -68,7 +68,8 @@ def get_light_scatters(data: dict) -> list:
             'y': [lights_y[idx]],
             'type': lights_state[-1, idx],
             'desc': f'states: {lights_state[:, idx]}',
-            'marker_size': 10
+            'marker_size': 10,
+            'marker_line_width': 2
         }
         scatters.append(scatter)
     return scatters

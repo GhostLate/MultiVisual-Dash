@@ -67,19 +67,20 @@ class CustomFigure:
     def __update_layout(self) -> None:
         self.__init_base_layout()
         if self._cur_plot_type == '2D':
-            self.figure.update_xaxes(title="X Axis", scaleanchor='y')
-            self.figure.update_yaxes(title="Y Axis", constrain='domain')
+            self.figure.update_xaxes(scaleanchor='y')
             self.figure.update_layout(
                 scene=dict(
-                    aspectratio=dict(x=1, y=1)
+                    xaxis_title='X Axis',
+                    yaxis_title='Y Axis'
                 ))
+
         elif self._cur_plot_type == '3D':
             self.figure.update_layout(
                 scene=dict(
                     xaxis_title='X Axis',
                     yaxis_title='Y Axis',
                     zaxis_title='Z Axis',
-                    aspectratio=dict(x=1, y=1, z=1)
+                    aspectmode='data'
                 ))
 
 
@@ -108,8 +109,8 @@ def create_scatter(plot_type: str, scatter_data: dict, scatter_name: str) -> go.
         scatter_fig.text = desc
     if 'marker_size' in scatter_data:
         scatter_fig.marker.size = scatter_data['marker_size']
-    if scatter_data['mode'] == 'markers':
-        scatter_fig.marker.line.width = 2
+    if 'marker_line_width' in scatter_data:
+        scatter_fig.marker.line.width = scatter_data['marker_line_width']
         scatter_fig.marker.line.color = '#ffffff'
     if 'fill' in scatter_data:
         scatter_fig.fill = 'toself'
