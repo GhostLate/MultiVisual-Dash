@@ -73,7 +73,6 @@ class CustomFigure:
                     xaxis_title='X Axis',
                     yaxis_title='Y Axis'
                 ))
-
         elif self._cur_plot_type == '3D':
             self.figure.update_layout(
                 scene=dict(

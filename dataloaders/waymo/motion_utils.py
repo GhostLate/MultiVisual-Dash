@@ -2,6 +2,8 @@ import numpy as np
 import scipy
 from sklearn.preprocessing import minmax_scale
 
+from dataloaders.utils import rotate_bbox
+
 
 def get_slices(samples_id) -> list:
     start_val = samples_id[0]
@@ -88,32 +90,9 @@ def get_car_rect_scatters(data: dict) -> list:
     agent_type = data['state/type'].numpy().astype(int).squeeze()
     scatters = []
     for idx in np.where(agent_valid == 1)[0]:
-        xyz = np.array([agent_rect_x[idx], agent_rect_y[idx], agent_rect_z[idx]]).reshape(-1, 1)
-        yaw = agent_rect_bbox_yaw[idx]
-
-        r_y = np.array([[np.cos(yaw), -np.sin(yaw), 0],
-                        [np.sin(yaw), np.cos(yaw), 0],
-                        [0, 0, 1]])
-        r_b = np.array([[np.cos(0), 0, np.sin(0)],
-                        [0, 1, 0],
-                        [-np.sin(0), 0, np.cos(0)]])
-        r_a = np.array([[1, 0, 0],
-                        [0, np.cos(0), -np.sin(0)],
-                        [0, np.sin(0), np.cos(0)]])
-
-        l, w, h = agent_rect_length[idx] / 2, agent_rect_width[idx] / 2, agent_rect_height[idx] / 2
-        box_up = np.array([[l, l, -l, -l],
-                           [-w, w, w, -w],
-                           [h, h, h, h]])
-        box_down = np.array([[l, l, -l, -l],
-                             [-w, w, w, -w],
-                             [-h, -h, -h, -h]])
-        box_up = (r_y @ r_b @ r_a) @ box_up
-        box_up = xyz + np.append(box_up, box_up[:, 0].reshape(-1, 1), axis=1)
-        box_down = (r_y @ r_b @ r_a) @ box_down
-        box_down = xyz + np.append(box_down, box_down[:, 0].reshape(-1, 1), axis=1)
-
-        box = np.hstack([box_down, box_up])
+        box = rotate_bbox(agent_rect_x[idx], agent_rect_y[idx], agent_rect_z[idx],
+                          agent_rect_length[idx], agent_rect_width[idx], agent_rect_height[idx],
+                          agent_rect_bbox_yaw[idx], 0, 0)
         scatter = {
             'name': f'agent_{agent_id[idx]}',
             'mode': 'lines',
