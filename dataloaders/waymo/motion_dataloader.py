@@ -2,6 +2,7 @@ import os
 
 import numpy as np
 
+from dash_viz.data import DashMessage
 from dataloaders.waymo.motion_utils import get_road_scatters, get_car_rect_scatters, get_trajectory_scatters, \
     get_light_scatters, get_pred_trajectory_scatters
 from dataloaders.waymo.feattures_description import generate_features_description
@@ -21,32 +22,28 @@ class WaymoMotionDataLoader:
 
     @staticmethod
     def data2plot_data(data, pred_traj_data: dict = None, save_dir: str = None):
-        plot_data = {
-            'command_type': 'add2plot',
-            'plot_name': str(data['scenario/id'].numpy().astype(str)[0]),
-            'scatters': [],
-        }
+        viz_massage = DashMessage('new_plot', str(data['scenario/id'].numpy().astype(str)[0]))
         if save_dir is not None:
-            plot_data['save_dir'] = save_dir
+            viz_massage.save_dir = save_dir
 
         road_scatters = get_road_scatters(data)
-        plot_data['scatters'].extend(road_scatters)
+        viz_massage.scatters.extend(road_scatters)
         light_scatters = get_light_scatters(data)
-        plot_data['scatters'].extend(light_scatters)
+        viz_massage.scatters.extend(light_scatters)
         car_rect_scatters = get_car_rect_scatters(data)
-        plot_data['scatters'].extend(car_rect_scatters)
+        viz_massage.scatters.extend(car_rect_scatters)
 
         if pred_traj_data is not None:
             trajectory_scatters = get_trajectory_scatters(data, [pred_traj_data['agent_id']])
-            plot_data['scatters'].extend(trajectory_scatters)
+            viz_massage.scatters.extend(trajectory_scatters)
             trajectory_scatters = get_pred_trajectory_scatters(
                 data, pred_traj_data['coords'], pred_traj_data['probas'], pred_traj_data['agent_id'])
-            plot_data['scatters'].extend(trajectory_scatters)
+            viz_massage.scatters.extend(trajectory_scatters)
         else:
             trajectory_scatters = get_trajectory_scatters(data)
-            plot_data['scatters'].extend(trajectory_scatters)
+            viz_massage.scatters.extend(trajectory_scatters)
 
-        return plot_data
+        return dict(viz_massage)
 
     def get_data_by_scenario_id(self, scenario_id: str) -> dict:
         for data_id, data in enumerate(self.dataset.as_numpy_iterator()):
@@ -61,5 +58,4 @@ class WaymoMotionDataLoader:
         """
         data = self.get_data_by_scenario_id(scenario_id)
         pred_traj_data = {'coords': coords, 'probas': probas, 'agent_id': agent_id}
-        plot_data = self.data2plot_data(data, pred_traj_data, save_dir)
-        return plot_data
+        return self.data2plot_data(data, pred_traj_data, save_dir)

@@ -2,11 +2,13 @@ import json
 import multiprocessing
 import os
 
+import numpy as np
 from dash.dependencies import Input, Output
 from dash_extensions.enrich import DashProxy
 
 from dash_viz.layout import init_layout
 from dash_viz.custom_figure import CustomFigure
+from utils import timing
 
 
 class DashApp(multiprocessing.Process):
@@ -22,7 +24,7 @@ class DashApp(multiprocessing.Process):
         self.use_loader_widget = use_loader_widget
 
         self.app = DashProxy()
-        self.figure = CustomFigure(self.plots_data)
+        self.figure = CustomFigure(title)
 
     def run(self):
         self.app.layout = init_layout(self.websocket_url, self.use_loader_widget)
@@ -39,6 +41,7 @@ class DashApp(multiprocessing.Process):
 
         self.app.run_server(host=self.host, port=self.port, dev_tools_silence_routes_logging=True, debug=False)
 
+    @timing
     def update_data(self, msg):
         if msg:
             msg_data = json.loads(msg['msg']['data'])
@@ -60,46 +63,58 @@ class DashApp(multiprocessing.Process):
         return self.dropdown_options, self.cur_plot
 
     def update_plots_data(self, msg_data):
-        self.plots_data.setdefault(msg_data['plot_name'], {})
+        if msg_data['command_type'] == 'new_plot' or msg_data['plot_name'] not in self.plots_data:
+            self.plots_data[msg_data['plot_name']] = dict()
         plot_data = self.plots_data[msg_data['plot_name']]
 
-        plot_data.setdefault('type', 'None')
-        plot_data.setdefault('scatter_types', set())
-        plot_data.setdefault('scatters', {})
-        if 'title' not in msg_data:
+        if 'title' in msg_data:
+            plot_data['title'] = msg_data['title']
+            print(msg_data['title'])
+        else:
             plot_data['title'] = self.title
+
+        if 'scene_camera' in msg_data:
+            plot_data['scene_camera'] = msg_data['scene_camera']
+
+        plot_data.setdefault('type', '2D')
+        plot_data.setdefault('scatters', {})
         for scatter in msg_data['scatters']:
             plot_data['scatters'].setdefault(scatter['name'], {})
             plot_scatter = plot_data['scatters'][scatter['name']]
 
             for key, value in scatter.items():
-                if key in plot_scatter and msg_data['command_type'] == 'add2plot' \
-                        and isinstance(value, list) and isinstance(plot_scatter[key], list):
-                    plot_scatter[key].extend(value)
+                if isinstance(value, list):
+                    value = np.array(value)
+
+                    if msg_data['command_type'] == 'add2plot' and key in plot_scatter:
+                        plot_scatter[key] = np.append(plot_scatter[key], value)
+                    else:
+                        plot_scatter[key] = value
                 else:
                     plot_scatter[key] = value
 
-            if 'type' in plot_scatter:
-                plot_data['scatter_types'].add(plot_scatter['type'])
-
             if all(key in plot_scatter for key in ['x', 'y', 'z']):
                 plot_data['type'] = '3D'
-            elif plot_data['type'] == 'None' and all(key in plot_scatter for key in ['x', 'y']):
-                plot_data['type'] = '2D'
+
+        if plot_data['type'] == '3D':
+            for scatter_name, scatter_data in plot_data['scatters'].items():
+                if 'z' not in scatter_data:
+                    scatter_data['z'] = np.zeros(shape=scatter_data['x'].shape)
 
     def change_cur_plot(self, value):
         self.cur_plot = value
-        return self.figure.update(self.cur_plot)
+        if self.cur_plot in self.plots_data:
+            return self.figure.update(self.plots_data[self.cur_plot])
+        return self.figure.figure
 
 
 def save_plot_as_img(plot_data: dict, plot_name, save_dir: str,
-                     plot_scale: float = 1.0, img_w: int = 3840, img_h: int = 2160, img_format: str = 'svg'):
+                     plot_scale: float = 1.0, img_w: int = 3840, img_h: int = 2160, img_format: str = 'png'):
     if any(key == plot_data['type'] for key in ['2D', '3D']):
         try:
             if not os.path.exists(save_dir):
                 os.mkdir(save_dir)
-            plots_data = {plot_name: plot_data}
-            figure = CustomFigure(plots_data).update(plot_name)
+            figure = CustomFigure().update(dict(plot_name=plot_data))
             img_path = f'{save_dir}/{plot_name}.{img_format}'
             figure.write_image(img_path, scale=plot_scale, width=img_w, height=img_h)
             print(f'Saved to {img_path}')

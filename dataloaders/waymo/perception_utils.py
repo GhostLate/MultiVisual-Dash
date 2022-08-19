@@ -1,6 +1,9 @@
+from functools import cached_property
+
 import numpy as np
 import tensorflow as tf
 
+from dash_viz.data import ScatterData
 from dataloaders.utils import rotate_bbox
 
 
@@ -57,16 +60,12 @@ def get_bbox_scatters(data):
                           agent_rect_length, agent_rect_width, agent_rect_height,
                           bbox_label.box.heading, 0, 0)
 
-        scatter = {
-            'name': f'agent_{agent_name}',
-            'mode': 'lines',
-            'x': box[0, :],
-            'y': box[1, :],
-            'z': box[2, :],
-            'line_size': 4,
-            # 'fill': True,
-            'type': agent_type
-        }
+        scatter = ScatterData(
+            name=f'agent_{agent_name}',
+            mode='lines',
+            x=box[0, :], y=box[1, :], z=box[2, :])
+        scatter.line_size = 4
+        scatter.type = agent_type
         scatters.append(scatter)
     return scatters
 
@@ -75,21 +74,20 @@ def get_point_scatters(data):
     points_all = data['points_all']
     point_labels_all = data['point_labels_all']
 
-    types = np.unique(point_labels_all[:, 1])
+    point_types = np.unique(point_labels_all[:, 1])
     scatters = []
-    for type in types:
-        ids = np.where(point_labels_all == type)[0]
+    for point_type in point_types:
+        ids = np.where(point_labels_all == point_type)[0]
         x = points_all[ids, 0]
         y = points_all[ids, 1]
         z = points_all[ids, 2]
-        scatter = {
-            'name': f'points_{type}',
-            'mode': 'markers',
-            'x': x,
-            'y': y,
-            'z': z,
-            'type': type,
-            'marker_size': 2
-        }
+        scatter = ScatterData(
+            name=f'points_{point_type}',
+            mode='markers',
+            x=x, y=y, z=z)
+        scatter.type = point_type
+        scatter.marker_size = 1
         scatters.append(scatter)
     return scatters
+
+

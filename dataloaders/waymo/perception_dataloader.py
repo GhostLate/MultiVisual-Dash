@@ -1,5 +1,9 @@
 import os
 import numpy as np
+
+from dash_viz.data import DashMessage, SceneCamera
+from utils import timing
+
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import tensorflow as tf
 
@@ -32,23 +36,26 @@ class WaymoPerceptionDataLoader:
                 # camera projection corresponding to each point.
                 cp_points_all = np.concatenate(cp_points, axis=0)
                 data = {'points_all': points_all, 'point_labels_all': point_labels_all, 'cp_points_all': cp_points_all,
-                        'name': f'{"_".join(frame.context.name.split("_")[3:])}_{data_id}',
+                        #'name': f'{"_".join(frame.context.name.split("_")[3:])}_{data_id}',
+                        'name': f'{"_".join(frame.context.name.split("_")[3:])}',
                         'bbox_labels': frame.laser_labels}
                 yield self.frame2plot_data(data) #, './samples')
 
     @staticmethod
     def frame2plot_data(data, save_dir: str = None):
-        plot_data = {
-            'command_type': 'add2plot',
-            'plot_name': data['name'],
-            'scatters': [],
-        }
+        scene_camera = SceneCamera()
+        scene_camera.up.z = 1
+        scene_camera.eye.x = -0.5
+        scene_camera.eye.z = 0.1
+        scene_camera.center.z = 0.05
+        viz_massage = DashMessage('new_plot', data['name'])
+        viz_massage.scene_camera = scene_camera
         if save_dir is not None:
-            plot_data['save_dir'] = save_dir
+            viz_massage.save_dir = save_dir
 
         point_scatters = get_point_scatters(data)
-        plot_data['scatters'].extend(point_scatters)
+        viz_massage.scatters.extend(point_scatters)
         point_scatters = get_bbox_scatters(data)
-        plot_data['scatters'].extend(point_scatters)
-        return plot_data
+        viz_massage.scatters.extend(point_scatters)
+        return dict(viz_massage)
 

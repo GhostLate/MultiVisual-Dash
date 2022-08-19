@@ -1,7 +1,7 @@
 import time
 
-from dataloaders.waymo.perception_dataloader import WaymoPerceptionDataLoader
 from dash_visualizer import DashVisualizer
+from dataloaders.waymo.perception_dataloader import WaymoPerceptionDataLoader
 from websocket.client import WebSocketClient
 
 if __name__ == "__main__":
@@ -16,9 +16,7 @@ if __name__ == "__main__":
     i = 0
     for plot_data in waymo_data_loader():
         visualizer_client.send(plot_data)
-
-        time.sleep(2)
+        time.sleep(.1)
         i += 1
-        if i > 1:
-            break
-
+        #if i > 100:
+        #    break
