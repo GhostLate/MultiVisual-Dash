@@ -3,7 +3,7 @@ import plotly.express as px
 import plotly.graph_objs as go
 
 from dash_viz.data import Point3D
-from utils import timing
+from debug_utils import timing
 
 
 class CustomFigure:
@@ -26,6 +26,7 @@ class CustomFigure:
             template="plotly_dark",
             uirevision=True)
 
+    @timing
     def update(self, plot_data: dict) -> go.Figure:
         self.__plot_data = plot_data.copy()
         if self.__updatable:
@@ -37,20 +38,19 @@ class CustomFigure:
             self.__updatable = True
         return self.figure
 
-    @timing
     def __update_data(self) -> None:
         scene_limits = Point3D()
         for scatter_name, scatter_data in self.__plot_data['scatters'].items():
-            if self.__plot_data['type'] == '3D' and 'scene_camera' in self.__plot_data:
+            if self.__plot_data['scene_centric_data']:
                 scene_limits.x = max(scene_limits.x, np.abs(scatter_data['x']).max())
                 scene_limits.y = max(scene_limits.y, np.abs(scatter_data['y']).max())
-                scene_limits.z = max(scene_limits.z, np.abs(scatter_data['z']).max())
+                if self.__plot_data['type'] == '3D':
+                    scene_limits.z = max(scene_limits.z, np.abs(scatter_data['z']).max())
             scatter_fig = self.create_scatter(self.__plot_data['type'], scatter_data, scatter_name)
             self.figure.add_trace(scatter_fig)
-        if self.__plot_data['type'] == '3D' and 'scene_camera' in self.__plot_data:
+        if self.__plot_data['scene_centric_data']:
             self.__scene_limits = scene_limits
 
-    @timing
     def __update_layout(self) -> dict:
         layout = dict(
             title=dict(
@@ -66,8 +66,11 @@ class CustomFigure:
         )
         if self.__plot_data['type'] == '2D':
             self.figure.update_xaxes(scaleanchor='y')
-        elif self.__plot_data['type'] == '3D'and 'scene_camera' in self.__plot_data:
+
+        if 'scene_camera' in self.__plot_data:
             layout['scene_camera'] = self.__plot_data['scene_camera']
+
+        if self.__plot_data['scene_centric_data']:
             layout['scene']['xaxis'] = dict(title='X Axis', range=[-self.__scene_limits.x, self.__scene_limits.x])
             layout['scene']['yaxis'] = dict(title='Y Axis', range=[-self.__scene_limits.y, self.__scene_limits.y])
             layout['scene']['zaxis'] = dict(title='Z Axis', range=[-self.__scene_limits.z, self.__scene_limits.z])

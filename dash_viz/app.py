@@ -8,7 +8,7 @@ from dash_extensions.enrich import DashProxy
 
 from dash_viz.layout import init_layout
 from dash_viz.custom_figure import CustomFigure
-from utils import timing
+from debug_utils import timing
 
 
 class DashApp(multiprocessing.Process):
@@ -41,7 +41,6 @@ class DashApp(multiprocessing.Process):
 
         self.app.run_server(host=self.host, port=self.port, dev_tools_silence_routes_logging=True, debug=False)
 
-    @timing
     def update_data(self, msg):
         if msg:
             msg_data = json.loads(msg['msg']['data'])
@@ -75,6 +74,9 @@ class DashApp(multiprocessing.Process):
 
         if 'scene_camera' in msg_data:
             plot_data['scene_camera'] = msg_data['scene_camera']
+
+        if 'scene_centric_data' in msg_data:
+            plot_data['scene_centric_data'] = msg_data['scene_centric_data']
 
         plot_data.setdefault('type', '2D')
         plot_data.setdefault('scatters', {})

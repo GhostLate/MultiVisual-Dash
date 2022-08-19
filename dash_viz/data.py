@@ -51,9 +51,10 @@ class DashMessage:
     save_dir: str
     title: str
 
-    def __init__(self, command_type: str, plot_name: str):
+    def __init__(self, command_type: str, plot_name: str, scene_centric_data=False):
         self.command_type = command_type
         self.plot_name = plot_name
+        self.scene_centric_data = scene_centric_data
         self.scatters = list()
 
     def __iter__(self):

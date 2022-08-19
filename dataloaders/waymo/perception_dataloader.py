@@ -1,8 +1,8 @@
 import os
+
 import numpy as np
 
-from dash_viz.data import DashMessage, SceneCamera
-from utils import timing
+from dash_viz.data import DashMessage
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import tensorflow as tf
@@ -14,8 +14,9 @@ from dataloaders.waymo.perception_utils import get_point_scatters, get_bbox_scat
 
 
 class WaymoPerceptionDataLoader:
-    def __init__(self, tfrecord_path: str):
+    def __init__(self, tfrecord_path: str, save_dir: str = None):
         self.dataset = tf.data.TFRecordDataset(tfrecord_path, compression_type='')
+        self.save_dir = save_dir
 
     def __call__(self):
         for data_id, data in enumerate(self.dataset):
@@ -34,22 +35,16 @@ class WaymoPerceptionDataLoader:
                 # point labels.
                 point_labels_all = np.concatenate(point_labels, axis=0)
                 # camera projection corresponding to each point.
-                cp_points_all = np.concatenate(cp_points, axis=0)
-                data = {'points_all': points_all, 'point_labels_all': point_labels_all, 'cp_points_all': cp_points_all,
-                        #'name': f'{"_".join(frame.context.name.split("_")[3:])}_{data_id}',
+                # cp_points_all = np.concatenate(cp_points, axis=0)
+                data = {'points_all': points_all, 'point_labels_all': point_labels_all,
                         'name': f'{"_".join(frame.context.name.split("_")[3:])}',
                         'bbox_labels': frame.laser_labels}
-                yield self.frame2plot_data(data) #, './samples')
+                yield self.frame2plot_data(data, self.save_dir)
 
     @staticmethod
     def frame2plot_data(data, save_dir: str = None):
-        scene_camera = SceneCamera()
-        scene_camera.up.z = 1
-        scene_camera.eye.x = -0.5
-        scene_camera.eye.z = 0.1
-        scene_camera.center.z = 0.05
-        viz_massage = DashMessage('new_plot', data['name'])
-        viz_massage.scene_camera = scene_camera
+        viz_massage = DashMessage('new_plot', data['name'], True)
+
         if save_dir is not None:
             viz_massage.save_dir = save_dir
 
@@ -57,5 +52,5 @@ class WaymoPerceptionDataLoader:
         viz_massage.scatters.extend(point_scatters)
         point_scatters = get_bbox_scatters(data)
         viz_massage.scatters.extend(point_scatters)
-        return dict(viz_massage)
+        return viz_massage
 

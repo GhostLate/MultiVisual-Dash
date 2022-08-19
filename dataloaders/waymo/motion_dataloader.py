@@ -12,13 +12,14 @@ import tensorflow as tf
 
 
 class WaymoMotionDataLoader:
-    def __init__(self, tfrecord_path: str):
+    def __init__(self, tfrecord_path: str, save_dir: str = None):
         self.dataset = tf.data.TFRecordDataset([tfrecord_path], num_parallel_reads=1)
+        self.save_dir = save_dir
 
     def __call__(self):
         for data_id, data in enumerate(self.dataset.as_numpy_iterator()):
             data = tf.io.parse_single_example(data, generate_features_description())
-            yield self.data2plot_data(data)
+            yield self.data2plot_data(data, self.save_dir)
 
     @staticmethod
     def data2plot_data(data, pred_traj_data: dict = None, save_dir: str = None):
@@ -43,7 +44,7 @@ class WaymoMotionDataLoader:
             trajectory_scatters = get_trajectory_scatters(data)
             viz_massage.scatters.extend(trajectory_scatters)
 
-        return dict(viz_massage)
+        return viz_massage
 
     def get_data_by_scenario_id(self, scenario_id: str) -> dict:
         for data_id, data in enumerate(self.dataset.as_numpy_iterator()):
@@ -51,7 +52,14 @@ class WaymoMotionDataLoader:
             if str(data['scenario/id'].numpy().astype(str)[0]) == scenario_id:
                 return data
 
-    def get_plot_data_with_pred(self, scenario_id: str, coords: np.array, probas: np.array, agent_id: int, save_dir: str):
+    def get_plot_data_with_pred(
+            self,
+            scenario_id: str,
+            coords: np.array,
+            probas: np.array,
+            agent_id: int,
+            save_dir: str = None
+    ):
         """
         coords: [samples; points; x, y]
         probas: [samples]
