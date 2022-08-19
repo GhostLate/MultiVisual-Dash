@@ -3,7 +3,6 @@ import plotly.express as px
 import plotly.graph_objs as go
 
 from dash_viz.data import Point3D
-from debug_utils import timing
 
 
 class CustomFigure:
@@ -26,7 +25,6 @@ class CustomFigure:
             template="plotly_dark",
             uirevision=True)
 
-    @timing
     def update(self, plot_data: dict) -> go.Figure:
         self.__plot_data = plot_data.copy()
         if self.__updatable:

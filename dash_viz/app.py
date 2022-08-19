@@ -6,9 +6,8 @@ import numpy as np
 from dash.dependencies import Input, Output
 from dash_extensions.enrich import DashProxy
 
-from dash_viz.layout import init_layout
 from dash_viz.custom_figure import CustomFigure
-from debug_utils import timing
+from dash_viz.layout import init_layout
 
 
 class DashApp(multiprocessing.Process):
@@ -68,7 +67,6 @@ class DashApp(multiprocessing.Process):
 
         if 'title' in msg_data:
             plot_data['title'] = msg_data['title']
-            print(msg_data['title'])
         else:
             plot_data['title'] = self.title
 
