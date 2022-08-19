@@ -10,7 +10,7 @@ if __name__ == "__main__":
     websocket_url = f"ws://{address}:{ws_port}"
 
     waymo_data_loader = WaymoMotionDataLoader("./data/validation_tfexample.tfrecord-00000-of-00150")
-    #visualizer_server = DashVisualizer('Waymo Motion', address, ws_port, 8000, f"{websocket_url}/dash_client")
+    visualizer_server = DashVisualizer('Waymo Motion', address, ws_port, 8000, f"{websocket_url}/dash_client")
     visualizer_client = WebSocketClient(websocket_url)
 
     for idx, plot_data in enumerate(waymo_data_loader()):
