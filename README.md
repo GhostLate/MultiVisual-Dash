@@ -9,13 +9,13 @@ Any figures which you can draw by using lines and points in 2D or 3D space.
 ### Installation
 
 You need Python 3.8 and higher.
-Just install all packages from `requirements.txt` and run
+Just install all packages from `requirements.txt` or `run` from source:
 
 ```bash
-python3 -m pip install -e <path>
+python3 -m pip install -e .
 ```
 
-from source
+
 
 ### Dataloaders
 
