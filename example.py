@@ -3,9 +3,9 @@ import time
 
 import numpy as np
 
-from dash_visualizer import DashVisualizer
-from dash_viz.data import DashMessage, ScatterData
-from websocket.client import WebSocketClient
+from multi_visual_dash.dash_visualizer import DashVisualizer
+from multi_visual_dash.dash_viz.data import DashMessage, ScatterData
+from multi_visual_dash.websocket.client import WebSocketClient
 
 if __name__ == "__main__":
     address = "localhost"
