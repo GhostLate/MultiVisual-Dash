@@ -4,7 +4,7 @@ This project was developed for visualization 2D/3D data like plots, point clouds
 Any figures which you can draw by using lines and points in 2D or 3D space.
 
 ### Waymo Dataset Visualization
-![Animation](docs/waymo.gif)
+![Animation](./docs/waymo.gif)
 
 ### Installation
 
