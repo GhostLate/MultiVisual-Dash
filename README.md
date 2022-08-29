@@ -6,6 +6,8 @@ Any figures which you can draw by using lines and points in 2D or 3D space.
 ### Waymo Dataset Visualization
 ![Animation](./docs/waymo.gif)
 
+More examples you can find [here](./multi_visual_dash/dataloaders/README.md).
+
 ### Installation
 
 You need Python 3.8 and higher.
@@ -19,7 +21,7 @@ python3 -m pip install -e .
 
 ### Dataloaders
 
-In `./dataloaders/waymo` you can find example of the visualization waymo prediction and motion datasets.
+In `./dataloaders/waymo` you can find waymo perception and motion dataloaders.
 
 ### Usage
 

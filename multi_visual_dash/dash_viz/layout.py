@@ -32,8 +32,8 @@ def init_layout(websocket_url: str, loading_widget=False) -> html.Div:
                         children='Graph: ',
                         style={
                             'display': 'inline-block',
-                            'margin': 15,
-                            'fontSize': '20px',
+                            'margin': 17,
+                            'fontSize': '25px',
                             'padding': '0px',
                             'verticalAlign': 'middle',
                             'color': 'white'
@@ -43,7 +43,7 @@ def init_layout(websocket_url: str, loading_widget=False) -> html.Div:
                         id='name-dropdown',
                         clearable=False,
                         style={
-                            'fontSize': '20px',
+                            'fontSize': '17px',
                             'margin': 5,
                             'width': '300px',
                             'verticalAlign': 'middle',

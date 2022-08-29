@@ -1,3 +1,5 @@
+from typing import Union
+
 import os
 
 import numpy as np
@@ -14,7 +16,7 @@ from waymo_open_dataset import dataset_pb2 as open_dataset
 
 
 class WaymoPerceptionDataLoader:
-    def __init__(self, tfrecord_path: str, save_dir: str = None, center_data: bool = True):
+    def __init__(self, tfrecord_path: Union[str, list], save_dir: str = None, center_data: bool = True):
         self.dataset = tf.data.TFRecordDataset(tfrecord_path, compression_type='')
         self.save_dir = save_dir
         self.center_data = center_data
@@ -39,7 +41,7 @@ class WaymoPerceptionDataLoader:
                 # cp_points_all = np.concatenate(cp_points, axis=0)
 
                 data = {'points_all': points_all, 'point_labels_all': point_labels_all,
-                        'name': f'{"_".join(frame.context.name.split("_")[3:])}',
+                        'name': f'{int("".join(frame.context.name.split("_"))):x}',
                         'bbox_labels': frame.laser_labels}
                 if not self.center_data:
                     transform_matrix = np.array(frame.pose.transform).reshape(4, 4)
