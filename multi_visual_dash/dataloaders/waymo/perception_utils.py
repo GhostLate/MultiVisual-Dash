@@ -2,7 +2,7 @@ import numpy as np
 import tensorflow as tf
 
 from multi_visual_dash.dash_viz.data import ScatterData
-from multi_visual_dash.dataloaders.utils import rotate_bbox
+from multi_visual_dash.dataloaders.utils import rotate_bbox, transform_points
 
 
 def range_image2pc_labels(frame, range_images, segmentation_labels, ri_index=0):
@@ -42,7 +42,7 @@ def range_image2pc_labels(frame, range_images, segmentation_labels, ri_index=0):
     return point_labels
 
 
-def get_bbox_scatters(data):
+def get_bbox_scatters(data, transform_matrix: np.ndarray = None):
     scatters = []
     for bbox_label in data['bbox_labels']:
         agent_center_x = bbox_label.box.center_x
@@ -57,24 +57,29 @@ def get_bbox_scatters(data):
         box = rotate_bbox(agent_center_x, agent_center_y, agent_center_z,
                           agent_rect_length, agent_rect_width, agent_rect_height,
                           bbox_label.box.heading, 0, 0)
-
+        if transform_matrix is not None:
+            box = transform_points(box, transform_matrix)
         scatter = ScatterData(
             name=f'agent_{agent_name}',
             mode='lines',
-            x=box[0, :], y=box[1, :], z=box[2, :])
+            x=box[:, 0], y=box[:, 1], z=box[:, 2])
         scatter.line_size = 4
         scatter.type = agent_type
         scatters.append(scatter)
     return scatters
 
 
-def get_point_scatters(data):
+def get_point_scatters(data, transform_matrix: np.ndarray = None):
     points_all = data['points_all']
     point_labels_all = data['point_labels_all']
 
     point_types = np.unique(point_labels_all[:, 1])
     scatters = []
+    if transform_matrix is not None:
+        points_all = transform_points(points_all, transform_matrix)
     for point_type in point_types:
+        if transform_matrix is not None and (point_type not in list(range(8, 90)) or point_type in [18, 21, 22]):
+            continue
         ids = np.where(point_labels_all == point_type)[0]
         x = points_all[ids, 0]
         y = points_all[ids, 1]
@@ -87,5 +92,3 @@ def get_point_scatters(data):
         scatter.marker_size = 1
         scatters.append(scatter)
     return scatters
-
-

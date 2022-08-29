@@ -94,7 +94,7 @@ def get_car_rect_scatters(data: dict) -> list:
         scatter = ScatterData(
             name=f'agent_{agent_id[idx]}',
             mode='lines',
-            x=box[0, :5], y=box[1, :5])
+            x=box[:5, 0], y=box[:5, 1])
         scatter.line_size = 1
         #scatter.fill = True
         scatter.type = agent_type[idx]

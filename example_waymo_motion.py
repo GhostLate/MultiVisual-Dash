@@ -6,7 +6,7 @@ from multi_visual_dash.websocket.client import WebSocketClient
 
 if __name__ == "__main__":
     address = "localhost"
-    ws_port = 4002
+    ws_port = 4000
     websocket_url = f"ws://{address}:{ws_port}"
 
     waymo_data_loader = WaymoMotionDataLoader("./data/validation_tfexample.tfrecord-00000-of-00150")

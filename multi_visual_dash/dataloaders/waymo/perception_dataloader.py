@@ -13,11 +13,11 @@ from waymo_open_dataset.utils import frame_utils
 from waymo_open_dataset import dataset_pb2 as open_dataset
 
 
-
 class WaymoPerceptionDataLoader:
-    def __init__(self, tfrecord_path: str, save_dir: str = None):
+    def __init__(self, tfrecord_path: str, save_dir: str = None, center_data: bool = True):
         self.dataset = tf.data.TFRecordDataset(tfrecord_path, compression_type='')
         self.save_dir = save_dir
+        self.center_data = center_data
 
     def __call__(self):
         for data_id, data in enumerate(self.dataset):
@@ -37,21 +37,30 @@ class WaymoPerceptionDataLoader:
                 point_labels_all = np.concatenate(point_labels, axis=0)
                 # camera projection corresponding to each point.
                 # cp_points_all = np.concatenate(cp_points, axis=0)
+
                 data = {'points_all': points_all, 'point_labels_all': point_labels_all,
                         'name': f'{"_".join(frame.context.name.split("_")[3:])}',
                         'bbox_labels': frame.laser_labels}
-                yield self.frame2plot_data(data, self.save_dir)
+                if not self.center_data:
+                    transform_matrix = np.array(frame.pose.transform).reshape(4, 4)
+                    yield self.data2plot_data(data, transform_matrix, self.save_dir)
+                else:
+                    yield self.data2plot_data(data, save_dir=self.save_dir)
 
     @staticmethod
-    def frame2plot_data(data, save_dir: str = None):
-        viz_massage = DashMessage('new_plot', data['name'], True)
+    def data2plot_data(data, transform_matrix: np.ndarray = None, save_dir: str = None) -> DashMessage:
+        if transform_matrix is not None:
+            viz_massage = DashMessage('add2plot', data['name'], False)
+        else:
+            viz_massage = DashMessage('new_plot', data['name'], True)
 
         if save_dir is not None:
             viz_massage.save_dir = save_dir
 
-        point_scatters = get_point_scatters(data)
+        point_scatters = get_point_scatters(data, transform_matrix)
         viz_massage.scatters.extend(point_scatters)
-        point_scatters = get_bbox_scatters(data)
-        viz_massage.scatters.extend(point_scatters)
+        if transform_matrix is None:
+            point_scatters = get_bbox_scatters(data, transform_matrix)
+            viz_massage.scatters.extend(point_scatters)
         return viz_massage
 

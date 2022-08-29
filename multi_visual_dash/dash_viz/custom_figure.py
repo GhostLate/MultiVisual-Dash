@@ -1,3 +1,5 @@
+from typing import Union
+
 import numpy as np
 import plotly.express as px
 import plotly.graph_objs as go
@@ -76,7 +78,7 @@ class CustomFigure:
         return layout
 
     @staticmethod
-    def create_scatter(plot_type: str, scatter_data: dict, scatter_name: str) -> go.Scatter | go.Scatter3d:
+    def create_scatter(plot_type: str, scatter_data: dict, scatter_name: str) -> Union[go.Scatter,  go.Scatter3d]:
         if plot_type == '3D':
             scatter_fig = go.Scatter3d(
                 x=np.array(scatter_data['x']), y=np.array(scatter_data['y']), z=np.array(scatter_data['z']))

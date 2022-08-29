@@ -59,10 +59,11 @@ class WaymoMotionDataLoader:
             probas: np.array,
             agent_id: int,
             save_dir: str = None
-    ):
+    ) -> DashMessage:
         """
-        coords: [samples; points; x, y]
-        probas: [samples]
+        :param coords: [samples; points; x, y]
+        :param probas: [samples]
+        :return: plot_data: DashMessage
         """
         data = self.get_data_by_scenario_id(scenario_id)
         pred_traj_data = {'coords': coords, 'probas': probas, 'agent_id': agent_id}

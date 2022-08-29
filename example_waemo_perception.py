@@ -10,7 +10,9 @@ if __name__ == "__main__":
     ws_port = 4000
     websocket_url = f"ws://{address}:{ws_port}"
 
-    waymo_data_loader = WaymoPerceptionDataLoader('./data/individual_files_validation_segment-10203656353524179475_7625_000_7645_000_with_camera_labels.tfrecord')
+    waymo_data_loader = WaymoPerceptionDataLoader(
+        './data/individual_files_validation_segment-10203656353524179475_7625_000_7645_000_with_camera_labels.tfrecord',
+        center_data=True)
     visualizer_server = DashVisualizer('Waymo Point Cloud', address, ws_port, 8000, f"{websocket_url}/dash_client")
     visualizer_client = WebSocketClient(websocket_url)
 
@@ -22,8 +24,8 @@ if __name__ == "__main__":
 
     time.sleep(1)
     for idx, plot_data in enumerate(waymo_data_loader()):
-        if idx == 0:
+        if idx == 0 and waymo_data_loader.center_data:
             plot_data.scene_camera = scene_camera
 
         visualizer_client.send(dict(plot_data))
-        time.sleep(.1)
+        time.sleep(1)

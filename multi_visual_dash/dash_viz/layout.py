@@ -45,7 +45,7 @@ def init_layout(websocket_url: str, loading_widget=False) -> html.Div:
                         style={
                             'fontSize': '20px',
                             'margin': 5,
-                            'width': '250px',
+                            'width': '300px',
                             'verticalAlign': 'middle',
                         }
                     )

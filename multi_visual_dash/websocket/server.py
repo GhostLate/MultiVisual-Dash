@@ -28,14 +28,14 @@ class WebSocketServer(multiprocessing.Process):
 
     async def unregister(self, ws: websockets.WebSocketServerProtocol) -> None:
         self.clients.remove(ws)
-        logging.info(f'{ws.remote_address[0]}:{ws.remote_address[1]}{ws.path} disconnects')
+        logging.info(f'server: {ws.remote_address[0]}:{ws.remote_address[1]}{ws.path} disconnects')
 
     async def register(self, ws: websockets.WebSocketServerProtocol) -> None:
         self.clients.add(ws)
-        logging.info(f'{ws.remote_address[0]}:{ws.remote_address[1]}{ws.path} connects')
+        logging.info(f'server: {ws.remote_address[0]}:{ws.remote_address[1]}{ws.path} connects')
         if ws.path == self.dash_client_path:
             await self.send_from_queue()
-            logging.info(f'all messages was sent to {ws.remote_address[0]}:{ws.remote_address[1]}{ws.path}')
+            logging.info(f'server: All messages was sent to {ws.remote_address[0]}:{ws.remote_address[1]}{ws.path}')
 
     async def send_from_queue(self) -> None:
         while self.msg_queue.qsize() > 0:
@@ -57,7 +57,7 @@ class WebSocketServer(multiprocessing.Process):
         try:
             await self.distribute(ws)
         except websockets.ConnectionClosedError:
-            logging.info(f'{ws.remote_address[0]}:{ws.remote_address[1]}{ws.path} closed by interrupt')
+            logging.info(f'server: {ws.remote_address[0]}:{ws.remote_address[1]}{ws.path} closed by interrupt')
         finally:
             await self.unregister(ws)
 
