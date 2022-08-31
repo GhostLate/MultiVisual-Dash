@@ -1,42 +1,48 @@
 import numpy as np
 
 
-def rotate_bbox(center_x, center_y, center_z, length, width, height, yaw, pitch, roll) -> np.ndarray:
+def get_bbox(center_x, center_y, center_z, length, width, height, yaw, pitch, roll) -> np.ndarray:
     xyz = np.array([center_x, center_y, center_z])
 
-    r_y = np.array([[np.cos(yaw), -np.sin(yaw), 0],
-                    [np.sin(yaw), np.cos(yaw), 0],
-                    [0, 0, 1]])
-    r_b = np.array([[np.cos(pitch), 0, np.sin(pitch)],
-                    [0, 1, 0],
-                    [-np.sin(pitch), 0, np.cos(pitch)]])
-    r_a = np.array([[1, 0, 0],
-                    [0, np.cos(roll), -np.sin(roll)],
-                    [0, np.sin(roll), np.cos(roll)]])
+    rot_matrix = get_rot_matrix(yaw, pitch, roll)
 
     l, w, h = length / 2, width / 2, height / 2
 
-    box_up = np.array([[ l, -w, h],
-                       [ l,  w, h],
-                       [-l,  w, h],
+    box_up = np.array([[l, -w, h],
+                       [l, w, h],
+                       [-l, w, h],
                        [-l, -w, h]])
-    box_down = np.array([[ l, -w, -h],
-                         [ l,  w, -h],
-                         [-l,  w, -h],
+    box_down = np.array([[l, -w, -h],
+                         [l, w, -h],
+                         [-l, w, -h],
                          [-l, -w, -h]])
-    box_up = np.transpose((r_y @ r_b @ r_a) @ np.transpose(box_up))
-    box_up = xyz + np.append(box_up, box_up[0, :].reshape(1, -1), axis=0)
-    box_down = np.transpose((r_y @ r_b @ r_a) @ np.transpose(box_down))
-    box_down = xyz + np.append(box_down, box_down[0, :].reshape(1, -1), axis=0)
+    bbox = xyz + np.transpose(rot_matrix @ np.transpose(np.vstack([box_down, box_up])))
+    return bbox
 
-    box = np.vstack([
-        box_down,
-        box_up[:2, :], box_down[1, :].reshape(1, -1),
-        box_up[1:3, :], box_down[2, :].reshape(1, -1),
-        box_up[2:4, :], box_down[3, :].reshape(1, -1),
-        box_up[3:, :]
+
+def get_rot_matrix(yaw, pitch, roll):
+    r_y = np.array([[np.cos(yaw), -np.sin(yaw), 0],
+                    [np.sin(yaw),  np.cos(yaw), 0],
+                    [0,            0,           1]])
+    r_b = np.array([[ np.cos(pitch), 0, np.sin(pitch)],
+                    [ 0,             1,             0],
+                    [-np.sin(pitch), 0, np.cos(pitch)]])
+    r_a = np.array([[1,            0,             0],
+                    [0, np.cos(roll), -np.sin(roll)],
+                    [0, np.sin(roll),  np.cos(roll)]])
+    return r_y @ r_b @ r_a
+
+
+def bbox2plotly_drawing(bbox: np.ndarray) -> np.ndarray:
+    bbox = np.vstack([
+        bbox[:4], bbox[0, :].reshape(1, -1),
+        bbox[4:6, :], bbox[1, :].reshape(1, -1),
+        bbox[5:7, :], bbox[2, :].reshape(1, -1),
+        bbox[6:, :], bbox[3, :].reshape(1, -1),
+        bbox[7:, :], bbox[4, :].reshape(1, -1),
+        np.array([np.nan, np.nan, np.nan]).reshape(1, -1)
     ])
-    return box
+    return bbox
 
 
 def transform_points(points: np.ndarray, transform_matrix: np.ndarray) -> np.ndarray:

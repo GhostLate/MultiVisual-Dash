@@ -10,7 +10,7 @@ logging.basicConfig(level=logging.INFO)
 
 
 class WebSocketClient:
-    def __init__(self, websocket_url):
+    def __init__(self, websocket_url: str):
         self.ws = None
         self.websocket_url = websocket_url
         self.loop = asyncio.get_event_loop()
@@ -28,7 +28,7 @@ class WebSocketClient:
         self.msg_queue.put(message)
         return self.loop.run_until_complete(self.__async__command(message))
 
-    async def send_from_queue(self) -> None:
+    async def send_from_queue(self):
         while self.msg_queue.qsize() > 0:
             message = self.msg_queue.get_nowait()
             try:

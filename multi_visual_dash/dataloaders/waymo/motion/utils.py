@@ -1,12 +1,14 @@
+from typing import Union
+
 import numpy as np
 import scipy
 from sklearn.preprocessing import minmax_scale
 
 from multi_visual_dash.dash_viz.data import ScatterData
-from multi_visual_dash.dataloaders.utils import rotate_bbox
+from multi_visual_dash.dataloaders.utils import get_bbox, bbox2plotly_drawing
 
 
-def get_slices(samples_id) -> list:
+def get_slices(samples_id: Union[list, np.ndarray]) -> list:
     start_val = samples_id[0]
     start_id = 0
     vals = []
@@ -24,14 +26,15 @@ def remove_unvalid_data(valid: np.ndarray, data: np.ndarray) -> np.ndarray:
 
 
 def filter_valid_data(valid: np.ndarray, data: np.ndarray) -> list:
-    data = data.tolist()
-    indexes = np.where(valid == 0)[0].tolist()
+    data = list(data)
+    indexes = np.where(valid == 0)[0]
     for i in indexes:
         data[i] = float('nan')
+    data.append(float('nan'))
     return data
 
 
-def get_road_scatters(data: dict) -> list:
+def get_road_scatters(data: dict) -> list[ScatterData]:
     roads_type = data['roadgraph_samples/type'].numpy().squeeze()
     roads_valid = data['roadgraph_samples/valid'].numpy().squeeze()
     roads_xyz = data['roadgraph_samples/xyz'].numpy()
@@ -55,7 +58,7 @@ def get_road_scatters(data: dict) -> list:
     return scatters
 
 
-def get_light_scatters(data: dict) -> list:
+def get_light_scatters(data: dict) -> list[ScatterData]:
     lights_state = np.vstack(
         [data['traffic_light_state/past/state'].numpy(), data['traffic_light_state/current/state'].numpy()])
     lights_valid = data['traffic_light_state/current/valid'].numpy().squeeze()
@@ -75,7 +78,7 @@ def get_light_scatters(data: dict) -> list:
     return scatters
 
 
-def get_car_rect_scatters(data: dict) -> list:
+def get_car_rect_scatters(data: dict) -> list[ScatterData]:
     agent_rect_x = data['state/current/x'].numpy().squeeze()
     agent_rect_y = data['state/current/y'].numpy().squeeze()
     agent_rect_z = data['state/current/z'].numpy().squeeze()
@@ -88,13 +91,14 @@ def get_car_rect_scatters(data: dict) -> list:
     agent_type = data['state/type'].numpy().astype(int).squeeze()
     scatters = []
     for idx in np.where(agent_valid == 1)[0]:
-        box = rotate_bbox(agent_rect_x[idx], agent_rect_y[idx], agent_rect_z[idx],
-                          agent_rect_length[idx], agent_rect_width[idx], agent_rect_height[idx],
-                          agent_rect_bbox_yaw[idx], 0, 0)
+        bbox = get_bbox(agent_rect_x[idx], agent_rect_y[idx], agent_rect_z[idx],
+                        agent_rect_length[idx], agent_rect_width[idx], agent_rect_height[idx],
+                        agent_rect_bbox_yaw[idx], 0, 0)
+        bbox = bbox2plotly_drawing(bbox)
         scatter = ScatterData(
             name=f'agent_{agent_id[idx]}',
             mode='lines',
-            x=box[:5, 0], y=box[:5, 1])
+            x=bbox[:5, 0], y=bbox[:5, 1])
         scatter.line_size = 1
         #scatter.fill = True
         scatter.type = agent_type[idx]
@@ -102,7 +106,7 @@ def get_car_rect_scatters(data: dict) -> list:
     return scatters
 
 
-def get_trajectory_scatters(data: dict, show_f_traj_ids: list = None) -> list:
+def get_trajectory_scatters(data: dict, show_f_traj_ids: list = None) -> list[ScatterData]:
     agent_traj_x = np.hstack([data['state/past/x'].numpy(), data['state/current/x'].numpy()])
     agent_traj_y = np.hstack([data['state/past/y'].numpy(), data['state/current/y'].numpy()])
     agent_traj_future_x = data['state/future/x'].numpy()
@@ -143,7 +147,7 @@ def get_trajectory_scatters(data: dict, show_f_traj_ids: list = None) -> list:
     return scatters
 
 
-def get_pred_trajectory_scatters(data: dict, coords: np.ndarray, probas: np.ndarray, agent_id: int) -> list:
+def get_pred_trajectory_scatters(data: dict, coords: np.ndarray, probas: np.ndarray, agent_id: int) -> list[ScatterData]:
     scatters = []
     agents_type = data['state/type'].numpy().astype(int).squeeze()
     agents_id = data['state/id'].numpy().astype(int).squeeze()

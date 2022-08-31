@@ -2,13 +2,11 @@ import numpy as np
 import tensorflow as tf
 
 from multi_visual_dash.dash_viz.data import ScatterData
-from multi_visual_dash.dataloaders.utils import rotate_bbox, transform_points
-
+from multi_visual_dash.dataloaders.utils import transform_points, get_bbox, bbox2plotly_drawing
 
 def range_image2pc_labels(frame, range_images, segmentation_labels, ri_index=0):
     """
     Convert segmentation labels from range images to point clouds.
-
     Args:
       frame: open dataset frame
       range_images: A dict of {laser_name, [range_image_first_return,
@@ -16,7 +14,6 @@ def range_image2pc_labels(frame, range_images, segmentation_labels, ri_index=0):
       segmentation_labels: A dict of {laser_name, [range_image_first_return,
          range_image_second_return]}.
       ri_index: 0 for the first return, 1 for the second return.
-
     Returns:
       point_labels: {[N, 2]} list of 3d lidar points's segmentation labels. 0 for
         points that are not labeled.
@@ -42,43 +39,36 @@ def range_image2pc_labels(frame, range_images, segmentation_labels, ri_index=0):
     return point_labels
 
 
-def get_bbox_scatters(data, transform_matrix: np.ndarray = None):
+def get_bbox_scatters(data: dict, center_data: bool = False) -> list[ScatterData]:
     scatters = []
-    for bbox_label in data['bbox_labels']:
-        agent_center_x = bbox_label.box.center_x
-        agent_center_y = bbox_label.box.center_y
-        agent_center_z = bbox_label.box.center_z
-        agent_rect_height = bbox_label.box.height
-        agent_rect_length = bbox_label.box.length
-        agent_rect_width = bbox_label.box.width
-        agent_name = bbox_label.id
-        agent_type = bbox_label.type
+    for bbox_label in data['bboxes']:
+        bbox = get_bbox(bbox_label['center'][0], bbox_label['center'][1], bbox_label['center'][2],
+                        bbox_label['extent'][0], bbox_label['extent'][1], bbox_label['extent'][2],
+                        bbox_label['heading'], 0, 0)
 
-        box = rotate_bbox(agent_center_x, agent_center_y, agent_center_z,
-                          agent_rect_length, agent_rect_width, agent_rect_height,
-                          bbox_label.box.heading, 0, 0)
-        if transform_matrix is not None:
-            box = transform_points(box, transform_matrix)
+        bbox = bbox2plotly_drawing(bbox)
+        if not center_data:
+            bbox = transform_points(bbox, data['transform_matrix'])
         scatter = ScatterData(
-            name=f'agent_{agent_name}',
+            name=f"agent_{bbox_label['name']}",
             mode='lines',
-            x=box[:, 0], y=box[:, 1], z=box[:, 2])
+            x=bbox[:, 0], y=bbox[:, 1], z=bbox[:, 2])
         scatter.line_size = 4
-        scatter.type = agent_type
+        scatter.type = bbox_label['type']
         scatters.append(scatter)
     return scatters
 
 
-def get_point_scatters(data, transform_matrix: np.ndarray = None):
+def get_point_scatters(data: dict, center_data: bool = False) -> list[ScatterData]:
     points_all = data['points_all']
     point_labels_all = data['point_labels_all']
 
     point_types = np.unique(point_labels_all[:, 1])
     scatters = []
-    if transform_matrix is not None:
-        points_all = transform_points(points_all, transform_matrix)
+    if not center_data:
+        points_all = transform_points(points_all, data['transform_matrix'])
     for point_type in point_types:
-        if transform_matrix is not None and (point_type not in list(range(8, 90)) or point_type in [18, 21, 22]):
+        if not center_data and point_type not in [8, 9, 10, 11, 14, 15, 16, 17, 19]:
             continue
         ids = np.where(point_labels_all == point_type)[0]
         x = points_all[ids, 0]

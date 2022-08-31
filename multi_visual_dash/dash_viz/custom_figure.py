@@ -16,7 +16,7 @@ class CustomFigure:
         self.__updatable = True
         self.__scene_limits = Point3D()
 
-    def __init_base_layout(self, title: str) -> None:
+    def __init_base_layout(self, title: str):
         self.figure.layout = {}
         self.figure.update_layout(
             title=dict(
@@ -38,9 +38,9 @@ class CustomFigure:
             self.__updatable = True
         return self.figure
 
-    def __update_data(self) -> None:
+    def __update_data(self):
         scene_limits = Point3D()
-        for scatter_name, scatter_data in self.__plot_data['scatters'].items():
+        for scatter_name, scatter_data in self.__plot_data['scatters'].copy().items():
             if self.__plot_data['scene_centric_data']:
                 scene_limits.x = max(scene_limits.x, np.abs(scatter_data['x']).max())
                 scene_limits.y = max(scene_limits.y, np.abs(scatter_data['y']).max())
@@ -60,32 +60,35 @@ class CustomFigure:
             scene=dict(
                 xaxis=dict(title='X Axis'),
                 yaxis=dict(title='Y Axis'),
-                zaxis=dict(title='Z Axis'),
-                aspectmode='data'
             )
         )
         if self.__plot_data['type'] == '2D':
             self.figure.update_xaxes(scaleanchor='y')
+        if self.__plot_data['type'] == '3D':
+            layout['scene']['zaxis'] = dict(title='Z Axis')
+            layout['scene']['aspectmode'] = 'data'
 
         if 'scene_camera' in self.__plot_data:
             layout['scene_camera'] = self.__plot_data['scene_camera']
 
         if self.__plot_data['scene_centric_data']:
+            max_val = max(self.__scene_limits.x, self.__scene_limits.y, self.__scene_limits.z) / 3
             layout['scene']['xaxis'] = dict(title='X Axis', range=[-self.__scene_limits.x, self.__scene_limits.x])
             layout['scene']['yaxis'] = dict(title='Y Axis', range=[-self.__scene_limits.y, self.__scene_limits.y])
             layout['scene']['zaxis'] = dict(title='Z Axis', range=[-self.__scene_limits.z, self.__scene_limits.z])
+            layout['scene']['aspectratio'] = dict(x=self.__scene_limits.x / max_val, y=self.__scene_limits.y / max_val, z=self.__scene_limits.z / max_val)
+            layout['scene']['aspectmode'] = 'manual'
         self.figure.update_layout(layout)
         return layout
 
     @staticmethod
-    def create_scatter(plot_type: str, scatter_data: dict, scatter_name: str) -> Union[go.Scatter,  go.Scatter3d]:
+    def create_scatter(plot_type: str, scatter_data: dict, scatter_name: str) -> Union[go.Scatter, go.Scatter3d]:
         if plot_type == '3D':
             scatter_fig = go.Scatter3d(
                 x=np.array(scatter_data['x']), y=np.array(scatter_data['y']), z=np.array(scatter_data['z']))
         else:
             scatter_fig = go.Scattergl(
                 x=np.array(scatter_data['x']), y=np.array(scatter_data['y']))
-
         scatter_fig.name = scatter_name
         scatter_fig.mode = scatter_data['mode']
         desc = ''

@@ -60,7 +60,7 @@ class DashApp(multiprocessing.Process):
                 self.cur_plot = self.dropdown_options[0]['value']
         return self.dropdown_options, self.cur_plot
 
-    def update_plots_data(self, msg_data):
+    def update_plots_data(self, msg_data: dict):
         if msg_data['command_type'] == 'new_plot' or msg_data['plot_name'] not in self.plots_data:
             self.plots_data[msg_data['plot_name']] = dict()
         plot_data = self.plots_data[msg_data['plot_name']]
