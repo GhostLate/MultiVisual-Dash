@@ -9,7 +9,7 @@ if __name__ == "__main__":
     visualizer_server = DashVisualizer('Dynamic Objects PC', address, ws_port, 8000, f"{websocket_url}/dash_client")
     visualizer_client = WebSocketClient(websocket_url)
 
-    waymo_data_loader = DynamicObjectsVisualizer('./data/dynamic_objects_dataset/', 10, 100)
+    waymo_data_loader = DynamicObjectsVisualizer('./data/dynamic_objects_dataset/waymo/', 20, 10000, True)
 
     for idx, plot_data in enumerate(waymo_data_loader()):
         visualizer_client.send(dict(plot_data))

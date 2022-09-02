@@ -55,7 +55,7 @@ class DashApp(multiprocessing.Process):
         self.dropdown_options = []
         if self.plots_data:
             self.dropdown_options = [{'label': f"{plt_name}_{plt_data['type']}", 'value': plt_name}
-                                     for plt_name, plt_data in self.plots_data.items()]
+                                     for plt_name, plt_data in self.plots_data.copy().items()]
             if self.cur_plot is None:
                 self.cur_plot = self.dropdown_options[0]['value']
         return self.dropdown_options, self.cur_plot

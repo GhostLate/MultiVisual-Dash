@@ -1,48 +1,75 @@
+import copy
 import os
 import pickle
 
+import blosc
 import numpy as np
-import open3d as o3d
 
-from multi_visual_dash.dataloaders.dynamic_objects_dataset.utils import get_dynamic_points, get_oriented_bboxes
+from multi_visual_dash.dataloaders.utils import transform_points
 
 
 class DynamicObjectsDataLoader:
-    post_data: dict
-
     def __init__(self, dataset_dir: str):
-        self.data_dir = dataset_dir
+        self.dynamic_objects_dir = os.path.join(dataset_dir, 'dynamic_objects/')
+        self.scenes_dir = os.path.join(dataset_dir, 'scenes/')
 
-    def get_filtered_data(self, min_pc_points: int, max_dist2bbox: int):
-        self.post_data = dict()
-        file_names = os.listdir(self.data_dir)
+    def __call__(self):
+        file_names = os.listdir(self.dynamic_objects_dir)
         for file_name in file_names:
-            with open(os.path.join(self.data_dir, file_name), 'rb') as file:
-                data = pickle.load(file)
-                for id in data:
-                    self.filter_data(data[id], min_pc_points, max_dist2bbox)
-        return self.post_data
+            with open(os.path.join(self.dynamic_objects_dir, file_name), 'rb') as file:
+                scenes = pickle.load(file)
+                for scene_name, scene_data in scenes.items():
+                    yield {scene_name: scene_data}
 
-    def filter_data(self, data, min_pc_points: int, max_dist2bbox: int):
-        dynamic_points = get_dynamic_points(data)
-        oriented_bboxes = get_oriented_bboxes(data)
-        self.post_data.setdefault(data['name'], {})
-        scene_data = self.post_data[data['name']]
-        for dynamic_point in dynamic_points:
-            pcd = o3d.geometry.PointCloud()
-            pcd.points = o3d.utility.Vector3dVector(dynamic_point['points'])
-            for bbox_data in oriented_bboxes:
-                if np.linalg.norm(bbox_data['oriented_bbox'].center) < max_dist2bbox:
-                    inliers_indices = bbox_data['oriented_bbox'].get_point_indices_within_bounding_box(pcd.points)
-                    inliers_points = np.asarray(pcd.select_by_index(inliers_indices, invert=False).points)
-                    if inliers_points.shape[0] > min_pc_points:
-                        scene_data.setdefault(bbox_data['agent_name'], {})
-                        agent_data = scene_data[bbox_data['agent_name']]
-                        agent_data.setdefault('points', {})
-                        agent_data['points'].setdefault(data['timestamp_micros'], [])
-                        agent_data['points'][data['timestamp_micros']].append({
-                            'points': inliers_points,
-                            'type': dynamic_point['type']
-                        })
-                        agent_data['bbox_type'] = bbox_data['agent_type']
-        return data
+    def transform_scenes(self, scenes: dict):
+        t_scenes = dict()
+        for scene_name, scene_data in scenes.items():
+            t_scenes[scene_name] = self.transform_scene_samples(scene_data)
+        return t_scenes
+
+    @staticmethod
+    def transform_scene_samples(scene_data: dict):
+        t_scene_data = copy.deepcopy(scene_data)
+        for agent_id, sample_data in t_scene_data['samples'].items():
+            for timestamp, ts_data in sample_data['timestamps'].items():
+                ts_data['inv_transform_matrix'] = np.linalg.inv(ts_data['transform_matrix'])
+                for points_cloud in ts_data['points_clouds']:
+                    points_cloud['points'] = transform_points(points_cloud['points'], ts_data['transform_matrix'])
+                ts_data['bbox']['original_points'] = transform_points(
+                    ts_data['bbox']['original_points'], ts_data['transform_matrix'])
+        return t_scene_data
+
+    def filter_scenes(self, scenes: dict, min_pc_points: int, max_dist2bbox: int):
+        f_scenes = dict()
+        for scene_name, scene_data in scenes.items():
+            f_scene_data = self.filter_scene_samples(scene_data, min_pc_points, max_dist2bbox)
+            if len(f_scene_data['samples'].keys()) > 0:
+                f_scenes[scene_name] = f_scene_data
+        return f_scenes
+
+    @staticmethod
+    def filter_scene_samples(scene_data: dict, min_pc_points: int, max_dist2bbox: int):
+        f_scene_data = {'samples': {}}
+        for agent_id, sample_data in scene_data['samples'].items():
+            f_sample_data = dict(timestamps=dict())
+            for timestamp, ts_data in sample_data['timestamps'].items():
+                if np.linalg.norm(ts_data['bbox']['center']) < max_dist2bbox:
+                    f_timestamp_data = dict(
+                        bbox=ts_data['bbox'],
+                        points_clouds=[pc for pc in ts_data['points_clouds'] if pc['points'].shape[0] > min_pc_points],
+                        transform_matrix=ts_data['transform_matrix']
+                    )
+                    if len(f_timestamp_data['points_clouds']) > 0:
+                        f_sample_data['timestamps'][timestamp] = f_timestamp_data
+            if len(f_sample_data['timestamps'].keys()) > 0:
+                f_scene_data['samples'][agent_id] = f_sample_data
+        return f_scene_data
+
+    def get_full_scenes_data(self):
+        file_names = os.listdir(self.scenes_dir)
+        for file_name in file_names:
+            with open(os.path.join(self.scenes_dir, file_name), "rb") as f:
+                compressed_pickle = f.read()
+                depressed_pickle = blosc.decompress(compressed_pickle)
+                scenes_data = pickle.loads(depressed_pickle)
+                yield scenes_data

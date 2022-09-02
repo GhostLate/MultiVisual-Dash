@@ -25,7 +25,7 @@ def parse_raw_data(raw_data) -> dict:
             'extent': np.array([bbox_label.box.length, bbox_label.box.width, bbox_label.box.height]),
             'heading': bbox_label.box.heading,
             'name': bbox_label.id,
-            'type': bbox_label.type
+            'label_id': bbox_label.type
         } for bbox_label in frame.laser_labels]
 
         return {

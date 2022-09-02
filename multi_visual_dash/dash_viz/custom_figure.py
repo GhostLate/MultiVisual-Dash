@@ -1,3 +1,4 @@
+import copy
 from typing import Union
 
 import numpy as np
@@ -28,7 +29,7 @@ class CustomFigure:
             uirevision=True)
 
     def update(self, plot_data: dict) -> go.Figure:
-        self.__plot_data = plot_data.copy()
+        self.__plot_data = copy.deepcopy(plot_data)
         if self.__updatable:
             self.__updatable = False
             if len(self.figure.data) > 0:
@@ -40,7 +41,7 @@ class CustomFigure:
 
     def __update_data(self):
         scene_limits = Point3D()
-        for scatter_name, scatter_data in self.__plot_data['scatters'].copy().items():
+        for scatter_name, scatter_data in self.__plot_data['scatters'].items():
             if self.__plot_data['scene_centric_data']:
                 scene_limits.x = max(scene_limits.x, np.abs(scatter_data['x']).max())
                 scene_limits.y = max(scene_limits.y, np.abs(scatter_data['y']).max())

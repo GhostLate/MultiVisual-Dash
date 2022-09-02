@@ -40,7 +40,7 @@ def bbox2plotly_drawing(bbox: np.ndarray) -> np.ndarray:
         bbox[5:7, :], bbox[2, :].reshape(1, -1),
         bbox[6:, :], bbox[3, :].reshape(1, -1),
         bbox[7:, :], bbox[4, :].reshape(1, -1),
-        np.array([np.nan, np.nan, np.nan]).reshape(1, -1)
+        np.repeat(np.nan, bbox.shape[1]).reshape(1, -1)
     ])
     return bbox
 
@@ -55,7 +55,7 @@ def transform_points(points: np.ndarray, transform_matrix: np.ndarray) -> np.nda
         if transform_matrix.shape[1] - 1 == points.shape[1]:
             points = np.append(points, np.ones(shape=(points.shape[0], 1)), axis=1)
         if transform_matrix.shape[1] == points.shape[1]:
-            return np.transpose(transform_matrix @ np.transpose(points))
+            return np.transpose(transform_matrix @ np.transpose(points))[:, :3].copy()
         else:
             raise ValueError("Wrong points dimension size")
     else:

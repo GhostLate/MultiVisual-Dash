@@ -54,7 +54,7 @@ def get_bbox_scatters(data: dict, center_data: bool = False) -> list[ScatterData
             mode='lines',
             x=bbox[:, 0], y=bbox[:, 1], z=bbox[:, 2])
         scatter.line_size = 4
-        scatter.type = bbox_label['type']
+        scatter.type = bbox_label['label_id']
         scatters.append(scatter)
     return scatters
 
