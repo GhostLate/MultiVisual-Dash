@@ -1,6 +1,7 @@
 import json
 import multiprocessing
 import os
+import time
 
 import numpy as np
 from dash.dependencies import Input, Output
@@ -21,19 +22,16 @@ class DashApp(multiprocessing.Process):
         self.dropdown_options = list()
         self.cur_plot = None
         self.use_loader_widget = use_loader_widget
-
         self.app = DashProxy()
         self.figure = CustomFigure(title)
 
     def run(self):
         self.app.layout = init_layout(self.websocket_url, self.use_loader_widget)
-        self.app.clientside_callback("""function(msg) {if(!msg) {return {};} return {msg}};""",
-                                     Output('plots_data_store', 'data'),
-                                     Input("ws", "message"), prevent_initial_call=True)
 
         self.app.callback(Output('name-dropdown', 'options'),
                           Output('name-dropdown', 'value'),
-                          Input('plots_data_store', 'data'))(self.update_data)
+                          Output("ws", "send"),
+                          Input("ws", "message"))(self.update_data)
 
         self.app.callback(Output('live-update-graph', 'figure'),
                           Input('name-dropdown', 'value'))(self.change_cur_plot)
@@ -42,23 +40,22 @@ class DashApp(multiprocessing.Process):
 
     def update_data(self, msg):
         if msg:
-            msg_data = json.loads(msg['msg']['data'])
+            msg_data = json.loads(msg['data'])
             self.update_plots_data(msg_data)
             if 'save_dir' in msg_data:
-                save_p = multiprocessing.Process(target=save_plot_as_img, kwargs={
+                multiprocessing.Process(target=save_plot_as_img, kwargs={
                     'plot_data': self.plots_data[msg_data['plot_name']],
                     'plot_name': msg_data['plot_name'],
                     'save_dir': msg_data['save_dir']
-                })
-                save_p.start()
+                }).start()
 
         self.dropdown_options = []
         if self.plots_data:
-            self.dropdown_options = [{'label': f"{plt_name}_{plt_data['type']}", 'value': plt_name}
-                                     for plt_name, plt_data in self.plots_data.copy().items()]
+            self.dropdown_options = [{'label': f"{plt_name}_{self.plots_data[plt_name]['type']}", 'value': plt_name}
+                                     for plt_name in sorted(list(self.plots_data.copy().keys()))]
             if self.cur_plot is None:
                 self.cur_plot = self.dropdown_options[0]['value']
-        return self.dropdown_options, self.cur_plot
+        return self.dropdown_options, self.cur_plot, json.dumps({'ws_status': 'ready', 'time': time.time()})
 
     def update_plots_data(self, msg_data: dict):
         if msg_data['command_type'] == 'new_plot' or msg_data['plot_name'] not in self.plots_data:

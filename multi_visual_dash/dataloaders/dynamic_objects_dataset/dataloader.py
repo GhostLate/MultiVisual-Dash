@@ -6,6 +6,7 @@ import blosc
 import numpy as np
 
 from multi_visual_dash.dataloaders.utils import transform_points
+from multi_visual_dash.dataloaders.dynamic_objects_dataset.utils import center_points
 
 
 class DynamicObjectsDataLoader:
@@ -37,7 +38,34 @@ class DynamicObjectsDataLoader:
                     points_cloud['points'] = transform_points(points_cloud['points'], ts_data['transform_matrix'])
                 ts_data['bbox']['original_points'] = transform_points(
                     ts_data['bbox']['original_points'], ts_data['transform_matrix'])
+                ts_data['bbox']['points'] = transform_points(ts_data['bbox']['points'], ts_data['transform_matrix'])
+                transform_matrix = np.eye(4)
+                transform_matrix[:3, 3] = ts_data['bbox']['center']
+                transform_matrix[:3, :3] = ts_data['bbox']['rot_matrix']
+                transform_matrix = ts_data['transform_matrix'] @ transform_matrix
+                ts_data['bbox']['center'] = transform_matrix[:3, 3]
+                ts_data['bbox']['rot_matrix'] = transform_matrix[:3, :3]
         return t_scene_data
+
+    def center_scenes(self, scenes: dict):
+        c_scenes = dict()
+        for scene_name, scene_data in scenes.items():
+            c_scenes[scene_name] = self.center_scene_samples(scene_data)
+        return c_scenes
+
+    @staticmethod
+    def center_scene_samples(scene_data: dict):
+        c_scene_data = copy.deepcopy(scene_data)
+        for agent_id, sample_data in c_scene_data['samples'].items():
+            for timestamp, ts_data in sample_data['timestamps'].items():
+                ts_data['inv_transform_matrix'] = np.linalg.inv(ts_data['transform_matrix'])
+                for points_cloud in ts_data['points_clouds']:
+                    points_cloud['points'] = center_points(points_cloud['points'], ts_data['bbox'])
+                ts_data['bbox']['original_points'] = center_points(ts_data['bbox']['original_points'], ts_data['bbox'])
+                ts_data['bbox']['points'] = center_points(ts_data['bbox']['points'], ts_data['bbox'])
+                ts_data['bbox']['center'] = np.zeros(3)
+                ts_data['bbox']['rot_matrix'] = np.eye(3)
+        return c_scene_data
 
     def filter_scenes(self, scenes: dict, min_pc_points: int, max_dist2bbox: int):
         f_scenes = dict()

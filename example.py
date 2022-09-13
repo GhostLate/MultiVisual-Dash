@@ -9,13 +9,12 @@ from multi_visual_dash.websocket.client import WebSocketClient
 
 if __name__ == "__main__":
     address = "localhost"
-    ws_port = 4000
+    ws_port = 4001
     websocket_url = f"ws://{address}:{ws_port}"
 
     visualizer_server = DashVisualizer('Trajectory', address, ws_port, 8000, f"{websocket_url}/dash_client")
     visualizer_client = WebSocketClient(websocket_url)
-
-    for i in range(40):
+    for i in range(60):
         viz_massage = DashMessage('add2plot', "00")
         scatter = ScatterData(
             "1",
@@ -39,4 +38,4 @@ if __name__ == "__main__":
             scatter.desc = "ped"
             viz_massage.scatters.append(scatter)
         visualizer_client.send(dict(viz_massage))
-        time.sleep(0.2)
+        time.sleep(0.1)

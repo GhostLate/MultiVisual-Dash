@@ -33,3 +33,8 @@ def get_dynamic_points(data: dict, label_ids: Union[list, np.ndarray] = None):
                 'points': points_all[ids, :]}
             )
     return points
+
+
+def center_points(points: np.ndarray, bbox: dict):
+    points -= bbox['center'].reshape(1, -1)
+    return np.transpose(np.linalg.inv(bbox['rot_matrix']) @ np.transpose(points))

@@ -26,7 +26,7 @@ class WebSocketClient:
         if not isinstance(message, str):
             message = json.dumps(message, cls=NumpyEncoder)
         self.msg_queue.put(message)
-        return self.loop.run_until_complete(self.__async__command(message))
+        return self.loop.run_until_complete(self.send_from_queue())
 
     async def send_from_queue(self):
         while self.msg_queue.qsize() > 0:
@@ -36,7 +36,5 @@ class WebSocketClient:
             except websockets.ConnectionClosedError:
                 logging.info(f'client: {self.ws.remote_address[0]}:{self.ws.remote_address[1]}{self.ws.path} closed by interrupt')
 
-    async def __async__command(self, message):
-        await self.send_from_queue()
 
 

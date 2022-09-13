@@ -48,7 +48,7 @@ def init_layout(websocket_url: str, loading_widget=False) -> html.Div:
                             'width': '300px',
                             'verticalAlign': 'middle',
                         }
-                    )
+                    ),
                 ],
                 className="row",
                 style={
@@ -59,7 +59,6 @@ def init_layout(websocket_url: str, loading_widget=False) -> html.Div:
                 }
             ),
             dcc_graph,
-            dcc.Store(id='plots_data_store'),
             WebSocket(id="ws", url=websocket_url),
         ],
         style={

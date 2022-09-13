@@ -19,7 +19,7 @@ setup(name='multi_visual_dash',
       install_requires=[
           'dash>=2.6.1',
           'websockets',
-          'dash-extensions>=0.1.5',
+          'dash-extensions>=0.1.6',
           'plotly>=5.10.0',
           'kaleido>=0.2.1',
       ],
