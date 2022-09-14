@@ -1,8 +1,6 @@
 import asyncio
-import json
 import logging
 import multiprocessing
-
 from asyncio import Queue
 from typing import Union
 
@@ -20,6 +18,7 @@ class WebSocketServer(multiprocessing.Process):
         self.port = port
         self.msg_queue = Queue()
         self.dash_client_path = "/dash_client"
+        self.start()
 
     async def send_from_queue(self):
         while not self.msg_queue.empty():
@@ -35,10 +34,7 @@ class WebSocketServer(multiprocessing.Process):
         try:
             asyncio.run(self.main())
         except KeyboardInterrupt:
-            try:
-                self.stop()
-            finally:
-                logging.info(f'server: closed by keyboard interrupt')
+            logging.info(f'server: closed by keyboard interrupt')
 
     async def main(self):
         async with websockets.serve(self.ws_handler, self.address, self.port,

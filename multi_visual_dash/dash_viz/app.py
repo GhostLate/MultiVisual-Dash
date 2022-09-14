@@ -24,6 +24,7 @@ class DashApp(multiprocessing.Process):
         self.use_loader_widget = use_loader_widget
         self.app = DashProxy()
         self.figure = CustomFigure(title)
+        self.start()
 
     def run(self):
         self.app.layout = init_layout(self.websocket_url, self.use_loader_widget)

@@ -11,5 +11,3 @@ class DashVisualizer:
                                    host=address,
                                    port=dash_port,
                                    websocket_url=ws_url)
-        self.ws_thread.start()
-        self.dash_thread.start()
