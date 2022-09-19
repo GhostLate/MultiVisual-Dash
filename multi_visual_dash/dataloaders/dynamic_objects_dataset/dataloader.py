@@ -58,7 +58,6 @@ class DynamicObjectsDataLoader:
         c_scene_data = copy.deepcopy(scene_data)
         for agent_id, sample_data in c_scene_data['samples'].items():
             for timestamp, ts_data in sample_data['timestamps'].items():
-                ts_data['inv_transform_matrix'] = np.linalg.inv(ts_data['transform_matrix'])
                 for points_cloud in ts_data['points_clouds']:
                     points_cloud['points'] = center_points(points_cloud['points'], ts_data['bbox'])
                 ts_data['bbox']['original_points'] = center_points(ts_data['bbox']['original_points'], ts_data['bbox'])

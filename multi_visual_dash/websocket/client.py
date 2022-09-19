@@ -1,12 +1,11 @@
 import asyncio
-import json
 import logging
 import multiprocessing
 from multiprocessing import Queue as mQueue
 
 import websockets
 
-from multi_visual_dash.websocket.utils import NumpyEncoder
+from multi_visual_dash.websocket.utils import compress_message
 
 logging.basicConfig(level=logging.INFO)
 
@@ -52,6 +51,7 @@ class WebSocketClient(multiprocessing.Process):
             self.last_message = None
 
     def send(self, message):
-        if not isinstance(message, str):
-            message = json.dumps(message, cls=NumpyEncoder)
-        self.msg_queue.put(message)
+        # if not isinstance(message, str):
+        #     message = json.dumps(message, cls=NumpyEncoder)
+        compressed_message = compress_message(message)
+        self.msg_queue.put(compressed_message)

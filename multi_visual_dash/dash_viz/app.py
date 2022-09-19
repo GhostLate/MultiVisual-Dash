@@ -7,8 +7,10 @@ import numpy as np
 from dash.dependencies import Input, Output
 from dash_extensions.enrich import DashProxy
 
+from debug.utils import timing
 from multi_visual_dash.dash_viz.custom_figure import CustomFigure
 from multi_visual_dash.dash_viz.layout import init_layout
+from multi_visual_dash.websocket.utils import decompress_message
 
 
 class DashApp(multiprocessing.Process):
@@ -39,9 +41,10 @@ class DashApp(multiprocessing.Process):
 
         self.app.run_server(host=self.host, port=self.port, dev_tools_silence_routes_logging=True, debug=False)
 
+    @timing
     def update_data(self, msg):
         if msg:
-            msg_data = json.loads(msg['data'])
+            msg_data = decompress_message(msg['data'])
             self.update_plots_data(msg_data)
             if 'save_dir' in msg_data:
                 multiprocessing.Process(target=save_plot_as_img, kwargs={
@@ -99,6 +102,7 @@ class DashApp(multiprocessing.Process):
                 if 'z' not in scatter_data:
                     scatter_data['z'] = np.zeros(shape=scatter_data['x'].shape)
 
+    @timing
     def change_cur_plot(self, value):
         self.cur_plot = value
         if self.cur_plot in self.plots_data:
