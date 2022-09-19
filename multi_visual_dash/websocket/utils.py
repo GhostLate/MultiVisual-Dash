@@ -1,10 +1,8 @@
 import json
 import pickle
 
-import blosc
+import blosc2
 import numpy as np
-
-from debug.utils import timing
 
 
 class NumpyEncoder(json.JSONEncoder):
@@ -19,15 +17,13 @@ class NumpyEncoder(json.JSONEncoder):
         return json.JSONEncoder.default(self, obj)
 
 
-#@timing
 def compress_message(message):
     pickled_data = pickle.dumps(message, protocol=pickle.HIGHEST_PROTOCOL)
-    compressed_pickle = blosc.compress(pickled_data)
+    compressed_pickle = blosc2.compress(pickled_data)
     return compressed_pickle.decode('latin-1')
 
 
-#@timing
 def decompress_message(compressed_message):
     compressed_pickle = str.encode(compressed_message, encoding='latin-1')
-    pickled_data = blosc.decompress(compressed_pickle)
+    pickled_data = blosc2.decompress(compressed_pickle)
     return pickle.loads(pickled_data)

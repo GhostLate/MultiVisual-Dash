@@ -1,10 +1,10 @@
 import asyncio
 import logging
 import multiprocessing
-from multiprocessing import Queue as mQueue
 
 import websockets
 
+from multi_visual_dash.dash_viz.data import DashMessage
 from multi_visual_dash.websocket.utils import compress_message
 
 logging.basicConfig(level=logging.INFO)
@@ -16,7 +16,7 @@ class WebSocketClient(multiprocessing.Process):
     def __init__(self, websocket_url: str, sleep_time: float = 1):
         multiprocessing.Process.__init__(self)
         self.websocket_url = websocket_url
-        self.msg_queue = mQueue()
+        self.msg_queue = multiprocessing.Queue()
         self.last_message = None
         self.sleep_time = sleep_time
         self.start()
@@ -51,7 +51,9 @@ class WebSocketClient(multiprocessing.Process):
             self.last_message = None
 
     def send(self, message):
-        # if not isinstance(message, str):
-        #     message = json.dumps(message, cls=NumpyEncoder)
+        if isinstance(message, DashMessage):
+            message = dict(message)
+        if not isinstance(message, dict):
+            logging.error("client: the message doesn't have a 'dict' instance")
         compressed_message = compress_message(message)
         self.msg_queue.put(compressed_message)

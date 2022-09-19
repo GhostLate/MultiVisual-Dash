@@ -22,6 +22,7 @@ setup(name='multi_visual_dash',
           'dash-extensions>=0.1.6',
           'plotly>=5.10.0',
           'kaleido>=0.2.1',
+          'blosc2>=0.3.2',
       ],
       python_requires='>=3.8',
       )
