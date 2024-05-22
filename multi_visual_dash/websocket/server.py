@@ -68,6 +68,7 @@ class WebSocketServer(multiprocessing.Process):
         async for _ in ws:
             message = await ws.msg_queue.get()
             await ws.send(message)
+            await asyncio.sleep(0)
 
     async def distribute(self, ws: websockets.WebSocketServerProtocol):
         async for message in ws:
@@ -79,6 +80,7 @@ class WebSocketServer(multiprocessing.Process):
 
             if not dash_client_exist:
                 await self.msg_queue.put(message)
-
+            await asyncio.sleep(0)
+            
     def stop(self):
         self.websocket.ws_server.close()
