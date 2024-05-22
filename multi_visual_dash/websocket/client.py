@@ -17,7 +17,6 @@ class WebSocketClient(multiprocessing.Process):
         multiprocessing.Process.__init__(self)
         self.websocket_url = websocket_url
         self.msg_queue = multiprocessing.Queue()
-        self.last_message = None
         self.sleep_time = sleep_time
         self.start()
 
@@ -44,11 +43,13 @@ class WebSocketClient(multiprocessing.Process):
                 await asyncio.sleep(self.sleep_time)
 
     async def send_handler(self):
+        last_message = None
         while True:
-            if self.last_message is None:
-                self.last_message = self.msg_queue.get()
-            await self.ws.send(self.last_message)
-            self.last_message = None
+            if last_message is None:
+                last_message = self.msg_queue.get()
+            await self.ws.send(last_message)
+            last_message = None
+            await asyncio.sleep(0)
 
     def send(self, message):
         if isinstance(message, DashMessage):
