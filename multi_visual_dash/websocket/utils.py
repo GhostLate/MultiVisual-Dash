@@ -19,11 +19,11 @@ class NumpyEncoder(json.JSONEncoder):
 
 def compress_message(message):
     pickled_data = pickle.dumps(message, protocol=pickle.HIGHEST_PROTOCOL)
-    compressed_pickle = blosc2.compress(pickled_data)
+    compressed_pickle = blosc2.compress2(pickled_data)
     return compressed_pickle.decode('latin-1')
 
 
 def decompress_message(compressed_message):
     compressed_pickle = str.encode(compressed_message, encoding='latin-1')
-    pickled_data = blosc2.decompress(compressed_pickle)
+    pickled_data = blosc2.decompress2(compressed_pickle)
     return pickle.loads(pickled_data)
