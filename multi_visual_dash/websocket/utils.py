@@ -24,6 +24,6 @@ def compress_message(message):
 
 
 def decompress_message(compressed_message):
-    compressed_pickle = str.encode(compressed_message, encoding='latin-1')
+    compressed_pickle = compressed_message.encode('latin-1')
     pickled_data = blosc2.decompress2(compressed_pickle)
     return pickle.loads(pickled_data)
